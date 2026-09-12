@@ -18,12 +18,12 @@ public class RestQuestionCatalogClient implements QuestionCatalogClient {
                     .body(new CatalogRequest(selection.taxonomyAll(), selection.questionTypeCodes(), selection.difficultyProfiles(), selection.contentLocales(), selection.programmingLanguages(), 100))
                     .retrieve().body(CatalogResponse.class);
             if (response == null || response.entries() == null) throw new QuestionCatalogUnavailableException();
-            return response.entries().stream().map(entry -> new QuestionCatalogEntry(entry.questionId(), entry.questionVersionId())).toList();
+            return response.entries().stream().map(entry -> new QuestionCatalogEntry(entry.questionId(), entry.questionVersionId(), entry.questionTypeCode())).toList();
         } catch (RestClientException exception) { throw new QuestionCatalogUnavailableException(exception); }
     }
     record CatalogRequest(List<com.mockarena.challenge.domain.TaxonomyAssignment> taxonomyAll, List<String> questionTypeCodes,
                           List<com.mockarena.challenge.domain.DifficultyProfile> difficultyProfiles, List<String> contentLocales,
                           List<String> programmingLanguages, int limit) { }
     record CatalogResponse(List<CatalogEntryResponse> entries) { }
-    record CatalogEntryResponse(UUID questionId, UUID questionVersionId, int versionNumber) { }
+    record CatalogEntryResponse(UUID questionId, UUID questionVersionId, int versionNumber, String questionTypeCode) { }
 }

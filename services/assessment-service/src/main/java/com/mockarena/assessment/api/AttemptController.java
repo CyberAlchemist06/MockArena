@@ -1,0 +1,3 @@
+package com.mockarena.assessment.api;
+import com.mockarena.assessment.application.AttemptContentApplicationService; import com.mockarena.assessment.security.CurrentAuthenticatedUser; import org.springframework.web.bind.annotation.*; import java.util.*;
+@RestController @RequestMapping("/api/v1/attempts") public class AttemptController { private final AttemptContentApplicationService content; private final CurrentAuthenticatedUser current; public AttemptController(AttemptContentApplicationService c,CurrentAuthenticatedUser u){content=c;current=u;} @GetMapping("/{attemptId}/content") public List<AttemptContentApplicationService.Item> content(@PathVariable UUID attemptId){return content.content(attemptId,current.userId());} }

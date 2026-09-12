@@ -1,0 +1,53 @@
+package com.mockarena.assessment;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mockarena.assessment.infrastructure.challenge.*;
+import com.nimbusds.jose.*;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.*;
+import java.nio.file.*;
+import java.security.*;
+import java.security.interfaces.RSAPrivateKey;
+import java.time.Instant;
+import java.util.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest @AutoConfigureMockMvc @Testcontainers
+class AssessmentJwtSecurityIntegrationTest {
+    private static final String ISSUER = "mockarena-identity", AUDIENCE = "mockarena-api";
+    private static final KeyPair KEY_PAIR = keyPair(); private static final Path PUBLIC_KEY_PATH = publicKey();
+    @Container static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    @DynamicPropertySource static void properties(DynamicPropertyRegistry registry) { registry.add("spring.datasource.url", postgres::getJdbcUrl); registry.add("spring.datasource.username", postgres::getUsername); registry.add("spring.datasource.password", postgres::getPassword); registry.add("assessment.security.jwt.public-key-path", () -> PUBLIC_KEY_PATH.toString()); registry.add("assessment.security.jwt.issuer", () -> ISSUER); registry.add("assessment.security.jwt.audience", () -> AUDIENCE); }
+    @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired JdbcTemplate jdbc; @MockitoBean ChallengeVersionCatalogClient challenges;
+
+    @Test void validJwtDerivesCreatorAndIgnoresClientCreator() throws Exception {
+        UUID subject = UUID.randomUUID(), malicious = UUID.randomUUID(), versionId = UUID.randomUUID(); when(challenges.resolve(any())).thenReturn(List.of(new ChallengeVersionReference(UUID.randomUUID(), versionId, 1, "PUBLISHED")));
+        String response = mvc.perform(post("/api/v1/assessments").header("Authorization", "Bearer " + token(subject, ISSUER, AUDIENCE, Instant.now().plusSeconds(60), KEY_PAIR)).contentType("application/json").content(request(versionId, malicious))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        UUID assessmentId = UUID.fromString(json.readTree(response).get("assessmentId").asText()); assertThat(jdbc.queryForObject("select created_by_user_id from assessment.assessments where id = ?", UUID.class, assessmentId)).isEqualTo(subject);
+    }
+    @Test void missingTokenAndInvalidTokensAreRejectedWhileHealthIsPublic() throws Exception {
+        UUID versionId = UUID.randomUUID(); mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(versionId, UUID.randomUUID()))).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        assertUnauthorized(token(UUID.randomUUID(), ISSUER, AUDIENCE, Instant.now().minusSeconds(1), KEY_PAIR), versionId); assertUnauthorized(token(UUID.randomUUID(), "wrong", AUDIENCE, Instant.now().plusSeconds(60), KEY_PAIR), versionId); assertUnauthorized(token(UUID.randomUUID(), ISSUER, "wrong", Instant.now().plusSeconds(60), KEY_PAIR), versionId); assertUnauthorized(token(UUID.randomUUID(), ISSUER, AUDIENCE, Instant.now().plusSeconds(60), keyPair()), versionId);
+        mvc.perform(get("/actuator/health")).andExpect(status().isOk());
+    }
+    private void assertUnauthorized(String jwt, UUID versionId) throws Exception { mvc.perform(post("/api/v1/assessments").header("Authorization", "Bearer " + jwt).contentType("application/json").content(request(versionId, UUID.randomUUID()))).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHENTICATED")); }
+    private static String request(UUID versionId, UUID untrustedCreator) { return "{\"createdByUserId\":\"" + untrustedCreator + "\",\"visibility\":\"PRIVATE\",\"content\":{\"title\":\"Authenticated assessment\",\"assessmentTypeCode\":\"STANDARD\",\"timingPolicy\":{\"policyCode\":\"UNTIMED\",\"parameters\":{}},\"attemptPolicy\":{\"policyCode\":\"MAX_ATTEMPTS\",\"parameters\":{\"maxAttempts\":1}},\"resultReleasePolicy\":{\"policyCode\":\"IMMEDIATE\",\"parameters\":{}},\"challengeVersionIds\":[\"" + versionId + "\"]}}"; }
+    private static String token(UUID subject, String issuer, String audience, Instant expiry, KeyPair signingKey) throws Exception { JWTClaimsSet claims = new JWTClaimsSet.Builder().subject(subject.toString()).issuer(issuer).audience(List.of(audience)).issueTime(Date.from(Instant.now())).expirationTime(Date.from(expiry)).jwtID(UUID.randomUUID().toString()).claim("roles", List.of("USER")).build(); SignedJWT signed = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claims); signed.sign(new RSASSASigner((RSAPrivateKey) signingKey.getPrivate())); return signed.serialize(); }
+    private static KeyPair keyPair() { try { KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA"); generator.initialize(2048); return generator.generateKeyPair(); } catch (Exception exception) { throw new IllegalStateException(exception); } }
+    private static Path publicKey() { try { Path path = Files.createTempFile("mockarena-assessment-public-", ".pem"); Files.writeString(path, "-----BEGIN PUBLIC KEY-----\n" + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(KEY_PAIR.getPublic().getEncoded()) + "\n-----END PUBLIC KEY-----\n"); path.toFile().deleteOnExit(); return path; } catch (Exception exception) { throw new IllegalStateException(exception); } }
+}

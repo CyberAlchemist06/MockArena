@@ -1,0 +1,38 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: assessment-service
+  datasource:
+    url: ${ASSESSMENT_DATABASE_URL:jdbc:postgresql://localhost:5432/mockarena}
+    username: ${ASSESSMENT_DATABASE_USERNAME:mockarena}
+    password: ${ASSESSMENT_DATABASE_PASSWORD:mockarena}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    schemas: assessment
+    default-schema: assessment
+challenge-service:
+  base-url: ${CHALLENGE_SERVICE_BASE_URL:http://localhost:8081}
+question-service:
+  base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8080}
+assessment:
+  entitlements:
+    development-enabled: ${ASSESSMENT_DEVELOPMENT_ENTITLEMENTS_ENABLED:true}
+  security:
+    enabled: ${ASSESSMENT_SECURITY_ENABLED:true}
+    jwt:
+      issuer: ${MOCKARENA_JWT_ISSUER:mockarena-identity}
+      audience: ${MOCKARENA_JWT_AUDIENCE:mockarena-api}
+      public-key-path: ${MOCKARENA_JWT_PUBLIC_KEY_PATH:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -83,6 +83,70 @@ class ChallengeServiceIntegrationTest {
                 .andExpect(jsonPath("$.entries[0].questionId").doesNotExist()).andExpect(jsonPath("$.entries[0].selection").doesNotExist());
     }
 
+    @Test void resolvesPublishedManifestInExactPersistedOrderWithOnlySafeRoutingMetadata() throws Exception {
+        QuestionCatalogEntry mcq = new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "MCQ");
+        QuestionCatalogEntry coding = new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "CODING");
+        when(catalog.resolve(any(RuleBasedSelection.class))).thenReturn(List.of(mcq, coding));
+        String created = mvc.perform(post("/api/v1/challenges").contentType("application/json").content(request(2)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String challengeId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(created).get("challengeId").asText();
+        mvc.perform(post("/api/v1/challenges/{id}/versions/1/publish", challengeId).contentType("application/json")
+                .content("{\"expectedChallengeVersion\":0,\"expectedVersion\":0}"))
+                .andExpect(status().isOk());
+        UUID versionId = jdbc.queryForObject("select current_published_version_id from challenge.challenges where id = ?", UUID.class, UUID.fromString(challengeId));
+        var expected = jdbc.queryForList("select position, question_id, question_version_id, question_type_code from challenge.challenge_version_questions where challenge_version_id = ? order by position", versionId);
+
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json")
+                .content("{\"challengeVersionIds\":[\"" + versionId + "\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[0].challengeId").value(challengeId))
+                .andExpect(jsonPath("$.entries[0].challengeVersionId").value(versionId.toString()))
+                .andExpect(jsonPath("$.entries[0].questions.length()").value(2))
+                .andExpect(jsonPath("$.entries[0].questions[0].position").value(expected.get(0).get("position")))
+                .andExpect(jsonPath("$.entries[0].questions[0].questionId").value(expected.get(0).get("question_id").toString()))
+                .andExpect(jsonPath("$.entries[0].questions[0].questionVersionId").value(expected.get(0).get("question_version_id").toString()))
+                .andExpect(jsonPath("$.entries[0].questions[0].questionTypeCode").value(expected.get(0).get("question_type_code")))
+                .andExpect(jsonPath("$.entries[0].status").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].title").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].prompt").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].options").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].correctOptionId").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].hiddenTests").doesNotExist())
+                .andExpect(jsonPath("$.entries[0].questions[0].scoringRules").doesNotExist());
+
+        // No Question Service call is involved: the returned route is historical manifest data.
+        when(catalog.resolve(any(RuleBasedSelection.class))).thenReturn(List.of(new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "MCQ")));
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json")
+                .content("{\"challengeVersionIds\":[\"" + versionId + "\"]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries[0].questions[0].questionVersionId").value(expected.get(0).get("question_version_id").toString()));
+    }
+
+    @Test void rejectsDraftRetiredIncompleteAndMissingManifestResolution() throws Exception {
+        QuestionCatalogEntry entry = new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "MCQ");
+        when(catalog.resolve(any(RuleBasedSelection.class))).thenReturn(List.of(entry));
+        var draft = new com.fasterxml.jackson.databind.ObjectMapper().readTree(mvc.perform(post("/api/v1/challenges").contentType("application/json").content(request(1))).andReturn().getResponse().getContentAsString());
+        String challengeId = draft.get("challengeId").asText(), draftVersionId = draft.get("challengeVersionId").asText();
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json").content("{\"challengeVersionIds\":[\"" + draftVersionId + "\"]}"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/api/v1/challenges/{id}/versions/1/publish", challengeId).contentType("application/json").content("{\"expectedChallengeVersion\":0,\"expectedVersion\":0}"))
+                .andExpect(status().isOk());
+        UUID published = jdbc.queryForObject("select current_published_version_id from challenge.challenges where id = ?", UUID.class, UUID.fromString(challengeId));
+        mvc.perform(post("/api/v1/challenges/{id}/versions/1/retire", challengeId).contentType("application/json").content("{\"expectedChallengeVersion\":1,\"expectedVersion\":1}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json").content("{\"challengeVersionIds\":[\"" + published + "\"]}"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json").content("{\"challengeVersionIds\":[\"" + UUID.randomUUID() + "\"]}"))
+                .andExpect(status().isNotFound());
+
+        UUID incomplete = UUID.randomUUID();
+        jdbc.update("insert into challenge.challenge_versions (id, challenge_id, version_number, status, title, requested_question_count, selection_seed, version, created_at, updated_at) values (?, ?, 2, 'DRAFT', 'Incomplete', 2, ?, 0, now(), now())", incomplete, UUID.fromString(challengeId), UUID.randomUUID());
+        jdbc.update("insert into challenge.challenge_version_questions (challenge_version_id, position, question_id, question_version_id, question_type_code) values (?, 1, ?, ?, 'MCQ')", incomplete, UUID.randomUUID(), UUID.randomUUID());
+        jdbc.update("update challenge.challenge_versions set status = 'PUBLISHED' where id = ?", incomplete);
+        mvc.perform(post("/internal/v2/challenge-versions/manifests").contentType("application/json").content("{\"challengeVersionIds\":[\"" + incomplete + "\"]}"))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
     @Test void rejectsInsufficientPublicationAndLeavesDraftUnchanged() throws Exception {
         QuestionCatalogEntry entry = new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID());
         when(catalog.resolve(any(RuleBasedSelection.class))).thenReturn(List.of(entry), List.of());

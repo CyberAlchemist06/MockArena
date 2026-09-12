@@ -41,6 +41,11 @@ class QuestionServiceIntegrationTest {
     }
     @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired JdbcTemplate jdbc; @Autowired EntityManager entityManager;
     @MockitoSpyBean QuestionVersionRepository questionVersionRepository;
+    @BeforeEach void isolateDatabase() {
+        // Testcontainers-only fixture reset. TRUNCATE does not invoke the production
+        // row-level immutability triggers that ordinary DELETE operations must obey.
+        jdbc.execute("TRUNCATE TABLE question.question_version_taxonomy, question.question_versions, question.questions RESTART IDENTITY CASCADE");
+    }
     @AfterEach void resetRepositorySpy() { reset(questionVersionRepository); }
 
     @Test void createsQuestionAndInitialVersionAtomically_andNeverReturnsHiddenTests() throws Exception {
@@ -122,6 +127,24 @@ class QuestionServiceIntegrationTest {
             .andReturn().getResponse().getContentAsString();
         assertThat(response).doesNotContain("inorder traversal is sorted");
         assertThat(response).doesNotContain("correctOptionId");
+    }
+
+    @Test void candidateContentReturnsExactPublishedAndRetiredMixedVersionsWithoutProtectedData() throws Exception {
+        UUID codingQuestion = UUID.randomUUID(), mcqQuestion = UUID.randomUUID();
+        String coding = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(codingQuestion))).andReturn().getResponse().getContentAsString();
+        String mcq = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(mcqQuestion))).andReturn().getResponse().getContentAsString();
+        var codingTree=json.readTree(coding); var mcqTree=json.readTree(mcq); UUID codingVersion=UUID.fromString(codingTree.get("id").asText()), mcqVersion=UUID.fromString(mcqTree.get("id").asText());
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish",codingTree.get("questionId").asText()).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}")).andExpect(status().isOk());
+        // Question Service deliberately has no retirement command yet.  Model a
+        // historical retired fixture before publication rather than attempting to
+        // mutate an immutable published version.
+        jdbc.update("update question.question_versions set status='RETIRED' where id=? and status='DRAFT'", mcqVersion);
+        entityManager.clear();
+        String body=mvc.perform(post("/internal/v3/question-versions/candidate-content").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\""+mcqVersion+"\",\""+codingVersion+"\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].questionTypeCode").value("MCQ")).andExpect(jsonPath("$.entries[0].options.length()").value(3)).andExpect(jsonPath("$.entries[1].questionTypeCode").value("CODING"))
+                .andExpect(jsonPath("$.entries[0].correctOptionId").doesNotExist()).andExpect(jsonPath("$.entries[0].explanation").doesNotExist()).andExpect(jsonPath("$.entries[1].hiddenTests").doesNotExist()).andExpect(jsonPath("$.entries[1].scoringRules").doesNotExist()).andExpect(jsonPath("$.entries[1].executionLimits").doesNotExist()).andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContain("inorder traversal is sorted").doesNotContain("secret-input").doesNotContain("correctOptionId");
+        mvc.perform(post("/internal/v3/question-versions/candidate-content").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\""+UUID.randomUUID()+"\"]}")).andExpect(status().isNotFound());
     }
 
     @Test void rejectsMcqWithFewerThanTwoOptionsInvalidCorrectOptionOrDuplicateOptionIds() throws Exception {

@@ -31,7 +31,7 @@ Services will be containerized with Docker and deployed to Kubernetes. Kubernete
 
 ## Boundaries
 
-Identity, challenges, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes. Identity issues short-lived RS256 access tokens; Question and Challenge Services validate them locally with the configured public key and derive creator provenance from `sub`, without accessing the Identity database. Per-user authorization, organization membership, and access rules remain future work.
+Identity, challenges, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes. Identity issues short-lived RS256 access tokens; Question, Challenge, and Assessment Services validate them locally with the configured public key and derive creator provenance from `sub`, without accessing the Identity database. Per-user authorization, organization membership, and access rules remain future work.
 
 ## Generic assessment content
 
@@ -40,3 +40,9 @@ Question Service is the generic assessment-content owner. DSA is its initial tax
 Challenge Service selects draft QuestionVersions through Question Service V2 using the same generic taxonomy, type-code, locale, difficulty-profile, and programming-language metadata. It stores only ordered Question and QuestionVersion identifiers.
 
 Challenge Service publishes a draft by resolving that rule into an immutable ordered manifest and records the current published version on its Challenge. Retiring that version clears the pointer without archiving the Challenge. Its protected internal resolver exposes only published, complete ChallengeVersion metadata for future composition.
+
+Assessment Service composes only ordered ChallengeVersion identifiers. It validates their published/composable state through Challenge Service's internal resolver and freezes that manifest with timing, attempt, and result-release policy snapshots when an AssessmentVersion is published. It neither accesses Challenge tables nor copies Challenge or Question content.
+
+For future Attempt routing, Challenge Service additionally exposes a protected V2 manifest contract for published, complete ChallengeVersions. It returns only the persisted position plus Question/QuestionVersion IDs and Question type code. Assessment Service consumes this service-to-service projection; it never reads Challenge or Question tables and the contract never contains Question content or protected data.
+
+Attempt start persists an Assessment-owned, ID-only route built from that manifest. It uses a replaceable entitlement reservation boundary and durable reconciliation record; no payment or entitlement-provider logic is embedded in Assessment content or Attempt domain logic.

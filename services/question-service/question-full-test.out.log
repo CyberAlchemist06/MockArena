@@ -1,0 +1,412 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.mockarena:question-service >-------------------
+[INFO] Building question-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ question-service ---
+[INFO] Deleting D:\MockArena\services\question-service\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ question-service ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 4 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ question-service ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 31 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ question-service ---
+[INFO] skip non existing resourceDirectory D:\MockArena\services\question-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ question-service ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] /D:/MockArena/services/question-service/src/test/java/com/mockarena/question/DevelopmentQuestionSeedIntegrationTest.java: Some input files use or override a deprecated API.
+[INFO] /D:/MockArena/services/question-service/src/test/java/com/mockarena/question/DevelopmentQuestionSeedIntegrationTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ question-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.mockarena.question.DevelopmentQuestionSeedIntegrationTest
+22:54:16.923 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.mockarena.question.DevelopmentQuestionSeedIntegrationTest]: DevelopmentQuestionSeedIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+22:54:17.128 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.mockarena.question.QuestionServiceApplication for test class com.mockarena.question.DevelopmentQuestionSeedIntegrationTest
+22:54:17.441 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+22:54:17.450 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+22:54:17.563 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+22:54:17.908 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+22:54:18.662 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+22:54:18.664 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+22:54:18.694 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.5.3
+  API Version: 1.54
+  Operating System: Rancher Desktop WSL Distribution
+  Total Memory: 15716 MB
+22:54:18.748 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+22:54:19.015 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-wincred) does not have credentials for https://index.docker.io/v1/
+22:54:19.270 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: 1e44e560e962b8f8de98ce8ebbe7e46d35d39f5dce5687466fb62e55063df3b0
+22:54:19.967 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT1.2182309S
+22:54:19.985 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+22:54:19.985 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+22:54:19.986 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+22:54:19.987 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+22:54:20.120 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: 495d937ea2d1025a0fb054856d6ff89e82ab284278641d467fb5d72b8bfb2223
+22:54:23.578 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT3.5904793S
+22:54:23.579 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:32916/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-09-12T22:54:24.200+05:30  INFO 9884 --- [question-service] [           main] q.DevelopmentQuestionSeedIntegrationTest : Starting DevelopmentQuestionSeedIntegrationTest using Java 21.0.12.1 with PID 9884 (started by Ashish Ranjan in D:\MockArena\services\question-service)
+2026-09-12T22:54:24.206+05:30  INFO 9884 --- [question-service] [           main] q.DevelopmentQuestionSeedIntegrationTest : The following 1 profile is active: "dev"
+2026-09-12T22:54:26.229+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-12T22:54:26.363+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 101 ms. Found 2 JPA repository interfaces.
+2026-09-12T22:54:27.812+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-12T22:54:28.113+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@484876a1
+2026-09-12T22:54:28.118+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-12T22:54:28.187+05:30  INFO 9884 --- [question-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:32916/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-09-12T22:54:28.332+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.database.base.Schema   : Creating schema "question" ...
+2026-09-12T22:54:28.357+05:30  INFO 9884 --- [question-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "question"."flyway_schema_history" ...
+2026-09-12T22:54:28.496+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "question": null
+2026-09-12T22:54:28.530+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "1 - question schema"
+2026-09-12T22:54:28.540+05:30  WARN 9884 --- [question-service] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: schema "question" already exists, skipping (SQL State: 42P06 - Error Code: 0)
+2026-09-12T22:54:28.604+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "2 - add question version catalog fields"
+2026-09-12T22:54:28.656+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "3 - add question version types"
+2026-09-12T22:54:28.704+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "4 - add generic assessment content metadata"
+2026-09-12T22:54:28.771+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "question", now at version v4 (execution time 00:00.132s)
+2026-09-12T22:54:28.962+05:30  INFO 9884 --- [question-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-12T22:54:29.075+05:30  INFO 9884 --- [question-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.15.Final
+2026-09-12T22:54:29.148+05:30  INFO 9884 --- [question-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-12T22:54:29.639+05:30  INFO 9884 --- [question-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-12T22:54:29.764+05:30  INFO 9884 --- [question-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.15
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-12T22:54:31.111+05:30  INFO 9884 --- [question-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-12T22:54:31.204+05:30  INFO 9884 --- [question-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-12T22:54:34.465+05:30  INFO 9884 --- [question-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-12T22:54:34.732+05:30  INFO 9884 --- [question-service] [           main] q.DevelopmentQuestionSeedIntegrationTest : Started DevelopmentQuestionSeedIntegrationTest in 11.073 seconds (process running for 19.309)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.91 s -- in com.mockarena.question.DevelopmentQuestionSeedIntegrationTest
+[INFO] Running com.mockarena.question.QuestionJwtSecurityIntegrationTest
+2026-09-12T22:54:38.608+05:30  INFO 9884 --- [question-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.mockarena.question.QuestionJwtSecurityIntegrationTest]: QuestionJwtSecurityIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-12T22:54:38.627+05:30  INFO 9884 --- [question-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.mockarena.question.QuestionServiceApplication for test class com.mockarena.question.QuestionJwtSecurityIntegrationTest
+2026-09-12T22:54:38.909+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Creating container for image: postgres:16-alpine
+2026-09-12T22:54:39.008+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container postgres:16-alpine is starting: 9069b6ea7f7475a29b596b86b1e6991c0dd55d38bc848bd664266c3f1313106c
+2026-09-12T22:54:42.522+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container postgres:16-alpine started in PT3.6128433S
+2026-09-12T22:54:42.524+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container is started (JDBC URL: jdbc:postgresql://localhost:32917/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-09-12T22:54:42.656+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionJwtSecurityIntegrationTest : Starting QuestionJwtSecurityIntegrationTest using Java 21.0.12.1 with PID 9884 (started by Ashish Ranjan in D:\MockArena\services\question-service)
+2026-09-12T22:54:42.656+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionJwtSecurityIntegrationTest : No active profile set, falling back to 1 default profile: "default"
+2026-09-12T22:54:43.125+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-12T22:54:43.153+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 19 ms. Found 2 JPA repository interfaces.
+2026-09-12T22:54:43.265+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-09-12T22:54:43.312+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.postgresql.jdbc.PgConnection@32cc87e0
+2026-09-12T22:54:43.313+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-09-12T22:54:43.317+05:30  INFO 9884 --- [question-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:32917/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-09-12T22:54:43.342+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.database.base.Schema   : Creating schema "question" ...
+2026-09-12T22:54:43.348+05:30  INFO 9884 --- [question-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "question"."flyway_schema_history" ...
+2026-09-12T22:54:43.412+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "question": null
+2026-09-12T22:54:43.423+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "1 - question schema"
+2026-09-12T22:54:43.426+05:30  WARN 9884 --- [question-service] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: schema "question" already exists, skipping (SQL State: 42P06 - Error Code: 0)
+2026-09-12T22:54:43.474+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "2 - add question version catalog fields"
+2026-09-12T22:54:43.511+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "3 - add question version types"
+2026-09-12T22:54:43.555+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "4 - add generic assessment content metadata"
+2026-09-12T22:54:43.594+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "question", now at version v4 (execution time 00:00.098s)
+2026-09-12T22:54:43.623+05:30  INFO 9884 --- [question-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-12T22:54:43.628+05:30  INFO 9884 --- [question-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-12T22:54:43.636+05:30  INFO 9884 --- [question-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-12T22:54:43.651+05:30  INFO 9884 --- [question-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+	Database driver: undefined/unknown
+	Database version: 16.15
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-12T22:54:43.781+05:30  INFO 9884 --- [question-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-12T22:54:43.831+05:30  INFO 9884 --- [question-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-12T22:54:44.108+05:30  INFO 9884 --- [question-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-12T22:54:44.273+05:30  INFO 9884 --- [question-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-12T22:54:44.273+05:30  INFO 9884 --- [question-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-12T22:54:44.273+05:30  INFO 9884 --- [question-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-09-12T22:54:44.328+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionJwtSecurityIntegrationTest : Started QuestionJwtSecurityIntegrationTest in 1.798 seconds (process running for 28.904)
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.053 s -- in com.mockarena.question.QuestionJwtSecurityIntegrationTest
+[INFO] Running com.mockarena.question.QuestionServiceIntegrationTest
+2026-09-12T22:54:45.674+05:30  INFO 9884 --- [question-service] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.mockarena.question.QuestionServiceIntegrationTest]: QuestionServiceIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-12T22:54:45.685+05:30  INFO 9884 --- [question-service] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.mockarena.question.QuestionServiceApplication for test class com.mockarena.question.QuestionServiceIntegrationTest
+2026-09-12T22:54:45.692+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Creating container for image: postgres:16-alpine
+2026-09-12T22:54:45.800+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container postgres:16-alpine is starting: 110e5c029a525a33266b5ee6bdf4db2786c2461524d2bd8c5ebb503c259d1d0c
+2026-09-12T22:54:49.201+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container postgres:16-alpine started in PT3.5086429S
+2026-09-12T22:54:49.201+05:30  INFO 9884 --- [question-service] [           main] tc.postgres:16-alpine                    : Container is started (JDBC URL: jdbc:postgresql://localhost:32918/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-09-12T22:54:49.257+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionServiceIntegrationTest     : Starting QuestionServiceIntegrationTest using Java 21.0.12.1 with PID 9884 (started by Ashish Ranjan in D:\MockArena\services\question-service)
+2026-09-12T22:54:49.257+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionServiceIntegrationTest     : No active profile set, falling back to 1 default profile: "default"
+2026-09-12T22:54:49.587+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-12T22:54:49.603+05:30  INFO 9884 --- [question-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 13 ms. Found 2 JPA repository interfaces.
+2026-09-12T22:54:49.708+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Starting...
+2026-09-12T22:54:49.741+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-3 - Added connection org.postgresql.jdbc.PgConnection@23c424c6
+2026-09-12T22:54:49.751+05:30  INFO 9884 --- [question-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-3 - Start completed.
+2026-09-12T22:54:49.760+05:30  INFO 9884 --- [question-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:32918/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-09-12T22:54:49.783+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.database.base.Schema   : Creating schema "question" ...
+2026-09-12T22:54:49.790+05:30  INFO 9884 --- [question-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "question"."flyway_schema_history" ...
+2026-09-12T22:54:49.869+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "question": null
+2026-09-12T22:54:49.879+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "1 - question schema"
+2026-09-12T22:54:49.883+05:30  WARN 9884 --- [question-service] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: schema "question" already exists, skipping (SQL State: 42P06 - Error Code: 0)
+2026-09-12T22:54:49.929+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "2 - add question version catalog fields"
+2026-09-12T22:54:49.972+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "3 - add question version types"
+2026-09-12T22:54:50.004+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "question" to version "4 - add generic assessment content metadata"
+2026-09-12T22:54:50.044+05:30  INFO 9884 --- [question-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 4 migrations to schema "question", now at version v4 (execution time 00:00.096s)
+2026-09-12T22:54:50.070+05:30  INFO 9884 --- [question-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-12T22:54:50.074+05:30  INFO 9884 --- [question-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-12T22:54:50.094+05:30  INFO 9884 --- [question-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-12T22:54:50.107+05:30  INFO 9884 --- [question-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-3)']
+	Database driver: undefined/unknown
+	Database version: 16.15
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-12T22:54:50.164+05:30  INFO 9884 --- [question-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-12T22:54:50.204+05:30  INFO 9884 --- [question-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-12T22:54:51.839+05:30  INFO 9884 --- [question-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-12T22:54:51.877+05:30  INFO 9884 --- [question-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-12T22:54:51.877+05:30  INFO 9884 --- [question-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-12T22:54:51.877+05:30  INFO 9884 --- [question-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-09-12T22:54:51.946+05:30  INFO 9884 --- [question-service] [           main] c.m.q.QuestionServiceIntegrationTest     : Started QuestionServiceIntegrationTest in 2.732 seconds (process running for 36.527)
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/v1/questions
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"421"]
+             Body = {"ownerUserId":"3efd2f78-8817-4b8f-8eaf-fd55dad0e81b","content":{"title":"Two Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"hiddenTests":[{"input":"secret-input","output":"secret-output"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000}}}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.mockarena.question.api.QuestionController
+           Method = com.mockarena.question.api.QuestionController#create(CreateQuestionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Location:"/api/v1/questions/64f8f39f-5e5c-47ca-b032-bbaa6ad3bf55/versions/1", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"e3bc966f-cb4e-416e-84d9-54347affe66f","questionId":"64f8f39f-5e5c-47ca-b032-bbaa6ad3bf55","versionNumber":1,"status":"DRAFT","title":"Two Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000},"options":[],"version":0}
+    Forwarded URL = null
+   Redirected URL = /api/v1/questions/64f8f39f-5e5c-47ca-b032-bbaa6ad3bf55/versions/1
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/v1/questions
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"379"]
+             Body = {"ownerUserId":"fab77adb-c11e-4b86-99fc-64208f2824ee","content":{"title":"BST Traversal","tags":["trees"],"difficulty":"EASY","questionType":"MCQ","prompt":"Which traversal is sorted?","options":[{"id":"preorder","text":"Preorder"},{"id":"inorder","text":"Inorder"},{"id":"postorder","text":"Postorder"}],"correctOptionId":"inorder","explanation":"inorder traversal is sorted"}}
+
+    Session Attrs = {}
+
+Handler:
+             Type = com.mockarena.question.api.QuestionController
+           Method = com.mockarena.question.api.QuestionController#create(CreateQuestionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 201
+    Error message = null
+          Headers = [Location:"/api/v1/questions/3bc8fb17-7ae4-45bb-9d19-0591fd66ce14/versions/1", Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"fe9a7f19-edb1-45d0-baf6-227879428eff","questionId":"3bc8fb17-7ae4-45bb-9d19-0591fd66ce14","versionNumber":1,"status":"DRAFT","title":"BST Traversal","tags":["trees"],"difficulty":"EASY","questionType":"MCQ","prompt":"Which traversal is sorted?","constraintsText":null,"examples":null,"supportedLanguages":null,"visibleTests":null,"scoringRules":null,"executionLimits":null,"options":[{"id":"preorder","text":"Preorder"},{"id":"inorder","text":"Inorder"},{"id":"postorder","text":"Postorder"}],"version":0}
+    Forwarded URL = null
+   Redirected URL = /api/v1/questions/3bc8fb17-7ae4-45bb-9d19-0591fd66ce14/versions/1
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/v1/questions/64f8f39f-5e5c-47ca-b032-bbaa6ad3bf55/versions/1/publish
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"49"]
+             Body = {"expectedQuestionVersion":0,"expectedVersion":0}
+    Session Attrs = {}
+
+Handler:
+             Type = com.mockarena.question.api.QuestionController
+           Method = com.mockarena.question.api.QuestionController#publish(UUID, int, PublishVersionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"e3bc966f-cb4e-416e-84d9-54347affe66f","questionId":"64f8f39f-5e5c-47ca-b032-bbaa6ad3bf55","versionNumber":1,"status":"PUBLISHED","title":"Two Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000},"options":[],"version":1}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+
+MockHttpServletRequest:
+      HTTP Method = POST
+      Request URI = /api/v1/questions/3bc8fb17-7ae4-45bb-9d19-0591fd66ce14/versions/1/publish
+       Parameters = {}
+          Headers = [Content-Type:"application/json;charset=UTF-8", Content-Length:"49"]
+             Body = {"expectedQuestionVersion":0,"expectedVersion":0}
+    Session Attrs = {}
+
+Handler:
+             Type = com.mockarena.question.api.QuestionController
+           Method = com.mockarena.question.api.QuestionController#publish(UUID, int, PublishVersionRequest)
+
+Async:
+    Async started = false
+     Async result = null
+
+Resolved Exception:
+             Type = null
+
+ModelAndView:
+        View name = null
+             View = null
+            Model = null
+
+FlashMap:
+       Attributes = null
+
+MockHttpServletResponse:
+           Status = 200
+    Error message = null
+          Headers = [Content-Type:"application/json", X-Content-Type-Options:"nosniff", X-XSS-Protection:"0", Cache-Control:"no-cache, no-store, max-age=0, must-revalidate", Pragma:"no-cache", Expires:"0", X-Frame-Options:"DENY"]
+     Content type = application/json
+             Body = {"id":"fe9a7f19-edb1-45d0-baf6-227879428eff","questionId":"3bc8fb17-7ae4-45bb-9d19-0591fd66ce14","versionNumber":1,"status":"PUBLISHED","title":"BST Traversal","tags":["trees"],"difficulty":"EASY","questionType":"MCQ","prompt":"Which traversal is sorted?","constraintsText":null,"examples":null,"supportedLanguages":null,"visibleTests":null,"scoringRules":null,"executionLimits":null,"options":[{"id":"preorder","text":"Preorder"},{"id":"inorder","text":"Inorder"},{"id":"postorder","text":"Postorder"}],"version":1}
+    Forwarded URL = null
+   Redirected URL = null
+          Cookies = []
+[ERROR] Tests run: 18, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 9.099 s <<< FAILURE! -- in com.mockarena.question.QuestionServiceIntegrationTest
+[ERROR] com.mockarena.question.QuestionServiceIntegrationTest.candidateContentReturnsExactPublishedAndRetiredMixedVersionsWithoutProtectedData -- Time elapsed: 0.181 s <<< ERROR!
+org.springframework.jdbc.UncategorizedSQLException: 
+PreparedStatementCallback; uncategorized SQLException for SQL [update question.question_versions set status='RETIRED' where id=?]; SQL state [P0001]; error code [0]; ERROR: published question versions are immutable
+  Where: PL/pgSQL function question.prevent_published_question_version_change() line 7 at RAISE
+	at org.springframework.jdbc.core.JdbcTemplate.translateException(JdbcTemplate.java:1557)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:677)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:972)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1016)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1026)
+	at com.mockarena.question.QuestionServiceIntegrationTest.candidateContentReturnsExactPublishedAndRetiredMixedVersionsWithoutProtectedData(QuestionServiceIntegrationTest.java:139)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: org.postgresql.util.PSQLException: ERROR: published question versions are immutable
+  Where: PL/pgSQL function question.prevent_published_question_version_change() line 7 at RAISE
+	at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2733)
+	at org.postgresql.core.v3.QueryExecutorImpl.processResults(QueryExecutorImpl.java:2420)
+	at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:372)
+	at org.postgresql.jdbc.PgStatement.executeInternal(PgStatement.java:517)
+	at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:434)
+	at org.postgresql.jdbc.PgPreparedStatement.executeWithFlags(PgPreparedStatement.java:194)
+	at org.postgresql.jdbc.PgPreparedStatement.executeUpdate(PgPreparedStatement.java:155)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
+	at org.springframework.jdbc.core.JdbcTemplate.lambda$update$2(JdbcTemplate.java:977)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:658)
+	... 7 more
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   QuestionServiceIntegrationTest.candidateContentReturnsExactPublishedAndRetiredMixedVersionsWithoutProtectedData:139 » UncategorizedSQL PreparedStatementCallback; uncategorized SQLException for SQL [update question.question_versions set status='RETIRED' where id=?]; SQL state [P0001]; error code [0]; ERROR: published question versions are immutable
+  Where: PL/pgSQL function question.prevent_published_question_version_change() line 7 at RAISE
+[INFO] 
+[ERROR] Tests run: 22, Failures: 0, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  50.684 s
+[INFO] Finished at: 2026-09-12T22:54:55+05:30
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.3:test (default-test) on project question-service: 
+[ERROR] 
+[ERROR] See D:\MockArena\services\question-service\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

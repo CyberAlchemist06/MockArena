@@ -1,0 +1,1 @@
+package com.mockarena.assessment.infrastructure.question; public class QuestionServiceUnavailableException extends RuntimeException { public QuestionServiceUnavailableException(Throwable cause){super(cause);} }

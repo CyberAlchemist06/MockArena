@@ -1,0 +1,118 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< com.mockarena:assessment-service >------------------
+[INFO] Building assessment-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ assessment-service ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ assessment-service ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 44 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ assessment-service ---
+[INFO] skip non existing resourceDirectory D:\MockArena\services\assessment-service\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ assessment-service ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug parameters release 21] to target\test-classes
+[INFO] /D:/MockArena/services/assessment-service/src/test/java/com/mockarena/assessment/AssessmentJwtSecurityIntegrationTest.java: Some input files use or override a deprecated API.
+[INFO] /D:/MockArena/services/assessment-service/src/test/java/com/mockarena/assessment/AssessmentJwtSecurityIntegrationTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /D:/MockArena/services/assessment-service/src/test/java/com/mockarena/assessment/AssessmentServiceIntegrationTest.java: D:\MockArena\services\assessment-service\src\test\java\com\mockarena\assessment\AssessmentServiceIntegrationTest.java uses unchecked or unsafe operations.
+[INFO] /D:/MockArena/services/assessment-service/src/test/java/com/mockarena/assessment/AssessmentServiceIntegrationTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- surefire:3.5.3:test (default-test) @ assessment-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.mockarena.assessment.AssessmentJwtSecurityIntegrationTest
+22:20:14.153 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.mockarena.assessment.AssessmentJwtSecurityIntegrationTest]: AssessmentJwtSecurityIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+22:20:14.372 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.mockarena.assessment.AssessmentServiceApplication for test class com.mockarena.assessment.AssessmentJwtSecurityIntegrationTest
+22:20:15.103 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+22:20:15.118 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+22:20:15.125 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 2.0.5
+22:20:15.491 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+22:20:16.292 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+22:20:16.293 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+22:20:16.324 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.5.3
+  API Version: 1.54
+  Operating System: Rancher Desktop WSL Distribution
+  Total Memory: 15716 MB
+22:20:16.375 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Creating container for image: testcontainers/ryuk:0.14.0
+22:20:16.626 [main] INFO org.testcontainers.utility.RegistryAuthLocator -- Credential helper/store (docker-credential-wincred) does not have credentials for https://index.docker.io/v1/
+22:20:16.829 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 is starting: dda80be54e01d6cdc0b122d22cbe3a93e12cfdf55aa318e768ce82baea14b3d6
+22:20:17.463 [main] INFO tc.testcontainers/ryuk:0.14.0 -- Container testcontainers/ryuk:0.14.0 started in PT1.0872135S
+22:20:17.477 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+22:20:17.477 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+22:20:17.478 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+22:20:17.479 [main] INFO tc.postgres:16-alpine -- Creating container for image: postgres:16-alpine
+22:20:17.585 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine is starting: d92a30e494ae44de54f438a68732d5cabd75672d4f61bd3e991a5148d2095182
+22:20:20.575 [main] INFO tc.postgres:16-alpine -- Container postgres:16-alpine started in PT3.0958154S
+22:20:20.577 [main] INFO tc.postgres:16-alpine -- Container is started (JDBC URL: jdbc:postgresql://localhost:32895/test?loggerLevel=OFF)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-09-12T22:20:21.210+05:30  INFO 25704 --- [assessment-service] [           main] m.a.AssessmentJwtSecurityIntegrationTest : Starting AssessmentJwtSecurityIntegrationTest using Java 21.0.12.1 with PID 25704 (started by Ashish Ranjan in D:\MockArena\services\assessment-service)
+2026-09-12T22:20:21.220+05:30  INFO 25704 --- [assessment-service] [           main] m.a.AssessmentJwtSecurityIntegrationTest : No active profile set, falling back to 1 default profile: "default"
+2026-09-12T22:20:23.095+05:30  INFO 25704 --- [assessment-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-12T22:20:23.253+05:30  INFO 25704 --- [assessment-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 128 ms. Found 7 JPA repository interfaces.
+2026-09-12T22:20:27.852+05:30  INFO 25704 --- [assessment-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-09-12T22:20:28.329+05:30  INFO 25704 --- [assessment-service] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@52a0bc48
+2026-09-12T22:20:28.346+05:30  INFO 25704 --- [assessment-service] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-09-12T22:20:28.447+05:30  INFO 25704 --- [assessment-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:32895/test?loggerLevel=OFF (PostgreSQL 16.15)
+2026-09-12T22:20:28.620+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.database.base.Schema   : Creating schema "assessment" ...
+2026-09-12T22:20:28.645+05:30  INFO 25704 --- [assessment-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "assessment"."flyway_schema_history" ...
+2026-09-12T22:20:28.808+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "assessment": null
+2026-09-12T22:20:28.848+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "assessment" to version "1 - assessment schema"
+2026-09-12T22:20:28.878+05:30  WARN 25704 --- [assessment-service] [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: schema "assessment" already exists, skipping (SQL State: 42P06 - Error Code: 0)
+2026-09-12T22:20:28.939+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "assessment" to version "2 - add assessment version availability timing"
+2026-09-12T22:20:28.982+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "assessment" to version "3 - add attempt start slice"
+2026-09-12T22:20:29.034+05:30  INFO 25704 --- [assessment-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 3 migrations to schema "assessment", now at version v3 (execution time 00:00.117s)
+2026-09-12T22:20:29.370+05:30  INFO 25704 --- [assessment-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-12T22:20:29.508+05:30  INFO 25704 --- [assessment-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.15.Final
+2026-09-12T22:20:29.596+05:30  INFO 25704 --- [assessment-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-12T22:20:29.866+05:30  INFO 25704 --- [assessment-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-12T22:20:30.059+05:30  INFO 25704 --- [assessment-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.15
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-12T22:20:30.651+05:30  WARN 25704 --- [assessment-service] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.mockarena.assessment.domain.AttemptItemId
+2026-09-12T22:20:30.651+05:30  WARN 25704 --- [assessment-service] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.mockarena.assessment.domain.AttemptItemId
+2026-09-12T22:20:30.651+05:30  WARN 25704 --- [assessment-service] [           main] org.hibernate.mapping.RootClass          : HHH000038: Composite-id class does not override equals(): com.mockarena.assessment.domain.AssessmentVersionChallengeId
+2026-09-12T22:20:30.654+05:30  WARN 25704 --- [assessment-service] [           main] org.hibernate.mapping.RootClass          : HHH000039: Composite-id class does not override hashCode(): com.mockarena.assessment.domain.AssessmentVersionChallengeId
+2026-09-12T22:20:31.583+05:30  INFO 25704 --- [assessment-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-12T22:20:31.677+05:30  INFO 25704 --- [assessment-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-12T22:20:34.475+05:30  INFO 25704 --- [assessment-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-12T22:20:35.382+05:30  INFO 25704 --- [assessment-service] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-12T22:20:35.382+05:30  INFO 25704 --- [assessment-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-12T22:20:35.386+05:30  INFO 25704 --- [assessment-service] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 4 ms
+2026-09-12T22:20:35.490+05:30  INFO 25704 --- [assessment-service] [           main] m.a.AssessmentJwtSecurityIntegrationTest : Started AssessmentJwtSecurityIntegrationTest in 14.855 seconds (process running for 22.715)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 23.78 s -- in com.mockarena.assessment.AssessmentJwtSecurityIntegrationTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  35.196 s
+[INFO] Finished at: 2026-09-12T22:20:38+05:30
+[INFO] ------------------------------------------------------------------------

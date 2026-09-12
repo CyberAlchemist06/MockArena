@@ -10,4 +10,9 @@ public final class ChallengeVersionInternalDtos {
     public record ResolveRequest(@NotEmpty List<@NotNull UUID> challengeVersionIds) { }
     public record Entry(UUID challengeId, UUID challengeVersionId, int versionNumber, String status) { }
     public record ResolveResponse(List<Entry> entries) { }
+
+    public record ManifestRequest(@NotEmpty List<@NotNull UUID> challengeVersionIds) { }
+    public record ManifestQuestion(int position, UUID questionId, UUID questionVersionId, String questionTypeCode) { }
+    public record ManifestEntry(UUID challengeId, UUID challengeVersionId, int versionNumber, List<ManifestQuestion> questions) { }
+    public record ManifestResponse(List<ManifestEntry> entries) { }
 }

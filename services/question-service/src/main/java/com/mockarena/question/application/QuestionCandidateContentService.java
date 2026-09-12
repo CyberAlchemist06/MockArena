@@ -1,0 +1,6 @@
+package com.mockarena.question.application;
+import com.mockarena.question.api.QuestionCandidateContentDtos.*; import com.mockarena.question.domain.*; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional; import java.util.*;
+@Service public class QuestionCandidateContentService {
+ private final QuestionVersionRepository versions; public QuestionCandidateContentService(QuestionVersionRepository versions){this.versions=versions;}
+ @Transactional(readOnly=true) public List<Entry> resolve(List<UUID> ids){ Map<UUID,QuestionVersion> found=new HashMap<>(); versions.findAllById(ids).forEach(v->found.put(v.id(),v)); return ids.stream().map(id->{QuestionVersion v=Optional.ofNullable(found.get(id)).orElseThrow(()->new NoSuchElementException("Question version not found")); if(v.status()!=QuestionVersionStatus.PUBLISHED&&v.status()!=QuestionVersionStatus.RETIRED)throw new NoSuchElementException("Question version not deliverable"); return new Entry(v.questionId(),v.id(),v.questionTypeCode(),v.title(),v.prompt(),v.options().stream().map(o->new Option(o.id(),o.text())).toList(),v.constraintsText(),v.examples(),v.programmingLanguages());}).toList(); }
+}

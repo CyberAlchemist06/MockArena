@@ -1,0 +1,3 @@
+package com.mockarena.question.api;
+import com.mockarena.question.application.QuestionCandidateContentService; import jakarta.validation.Valid; import org.springframework.web.bind.annotation.*;
+@RestController @RequestMapping("/internal/v3/question-versions") public class QuestionCandidateContentController { private final QuestionCandidateContentService service; public QuestionCandidateContentController(QuestionCandidateContentService service){this.service=service;} @PostMapping("/candidate-content") public QuestionCandidateContentDtos.Response content(@Valid @RequestBody QuestionCandidateContentDtos.Request request){return new QuestionCandidateContentDtos.Response(service.resolve(request.questionVersionIds()));} }

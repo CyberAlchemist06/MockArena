@@ -33,6 +33,8 @@ A **Challenge** is a reusable, user-created learning or assessment asset. It may
 - **Relationships:** Belongs to one Challenge and references one or more QuestionVersions by stable ID. An AssessmentVersion composes exact ChallengeVersions.
 - **Immutable data:** All content, ordering, selection rules, and resolved QuestionVersion references are immutable after publication. QuestionVersion content remains owned by Question Service and is never copied into a ChallengeVersion. Corrections create a new version.
 
+Challenge Service may expose the published manifest internally as ordered routing metadata (`position`, `questionId`, `questionVersionId`, `questionTypeCode`) to Assessment Service. This projection contains no Question content and is not a browser API.
+
 ## Question
 
 - **Purpose:** Reusable DSA problem identity, separating a durable problem record from its versioned executable content.
@@ -58,14 +60,14 @@ A **Challenge** is a reusable, user-created learning or assessment asset. It may
 - **Important fields:** `assessmentId`, `creatorType` (`USER`, `ORGANIZATION`, or `SYSTEM`), optional `creatorUserId`, optional `organizationId`, title/summary, visibility (`PRIVATE`, `SHARED`, `PUBLIC`, or `ORGANIZATION_ONLY`), access policy, current version reference, and lifecycle status. `creatorUserId` is required for `USER`; `organizationId` is required for `ORGANIZATION`; system-created assessments need neither. The other identifier remains optional where it supplies provenance or scope.
 - **Lifecycle/status:** `draft`, `published`, `closed`, or `archived`. Closing stops new Attempts; archiving preserves history.
 - **Relationships:** May be associated with a creator User and/or an organization according to `creatorType`; has many AssessmentVersions, invitations/access grants, and Attempts. AssessmentVersions reference Challenge Service's ChallengeVersions.
-- **Mutable data:** Access policy, lifecycle status, and current-version reference may change. Published assessment content lives only in AssessmentVersion.
+- **Mutable data:** Access policy, lifecycle status, and current-version reference may change. `createdByUserId` is derived from the authenticated Identity JWT subject. Published assessment content lives only in AssessmentVersion.
 
 ## AssessmentVersion
 
 - **Purpose:** Immutable assessment definition used to run and rank attempts.
 - **Owner:** Assessment Service.
-- **Important fields:** `assessmentVersionId`, `assessmentId`, version number, ordered `challengeVersionIds`, timing rules, attempt policy, scoring configuration, result-release configuration, publication metadata, and status.
-- **Lifecycle/status:** `draft`, `published`, `closed`, or `retired`. A published version accepts Attempts until closed according to its access and timing rules.
+- **Important fields:** `assessmentVersionId`, `assessmentId`, version number, ordered ChallengeVersion references (`challengeId`, `challengeVersionId`, and version number), assessment type code, availability window (`availableFrom`/`availableUntil` UTC instants), optional attempt duration, timing policy envelope, attempt policy envelope, result-release policy envelope, publication metadata, and status.
+- **Lifecycle/status:** `draft`, `published`, `closed`, or `retired`. A candidate may start an Attempt only at or after `availableFrom` and before `availableUntil` when configured. A started Attempt's deadline is the earlier of its duration deadline and `availableUntil`. Closing prevents future starts without rewriting the immutable snapshot.
 - **Relationships:** Belongs to one Assessment; composes exact ChallengeVersions; has Attempts, Scores, and LeaderboardEntries. It receives Question/Challenge data through service contracts, not cross-schema reads.
 - **Immutable data:** Once published, composition, order, timing, access, scoring, and release rules are immutable. Changes require a new AssessmentVersion.
 
