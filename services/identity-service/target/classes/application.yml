@@ -1,0 +1,27 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: identity-service
+  datasource:
+    url: ${IDENTITY_DATABASE_URL:jdbc:postgresql://localhost:5432/mockarena}
+    username: ${IDENTITY_DATABASE_USERNAME:mockarena}
+    password: ${IDENTITY_DATABASE_PASSWORD:mockarena}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    schemas: identity
+    default-schema: identity
+identity:
+  jwt:
+    issuer: ${IDENTITY_JWT_ISSUER:mockarena-identity}
+    audience: ${IDENTITY_JWT_AUDIENCE:mockarena-api}
+    private-key-path: ${IDENTITY_JWT_PRIVATE_KEY_PATH:}
+    public-key-path: ${IDENTITY_JWT_PUBLIC_KEY_PATH:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

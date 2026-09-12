@@ -1,2 +1,4 @@
 com\mockarena\challenge\ChallengeServiceIntegrationTest.class
 com\mockarena\challenge\application\DeterministicQuestionSelectorTest.class
+com\mockarena\challenge\ChallengeJwtSecurityIntegrationTest.class
+com\mockarena\challenge\ChallengeSelectionMigrationTest.class

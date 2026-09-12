@@ -14,9 +14,11 @@ public class ChallengeVersion {
     @Column(nullable = false) private int versionNumber;
     @Enumerated(EnumType.STRING) @Column(nullable = false) private ChallengeVersionStatus status;
     @Column(nullable = false) private String title;
-    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<String> tagsAll;
-    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<String> difficulties;
-    private String supportedLanguage;
+    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<TaxonomyAssignment> taxonomyAll;
+    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<String> questionTypeCodes;
+    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<DifficultyProfile> difficultyProfiles;
+    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<String> contentLocales;
+    @JdbcTypeCode(SqlTypes.JSON) @Column(nullable = false, columnDefinition = "jsonb") private List<String> programmingLanguages;
     @Column(nullable = false) private int requestedQuestionCount;
     @Column(nullable = false) private UUID selectionSeed;
     @Version private long version;
@@ -25,7 +27,9 @@ public class ChallengeVersion {
     protected ChallengeVersion() { }
     public ChallengeVersion(UUID id, UUID challengeId, String title, RuleBasedSelection rule, UUID selectionSeed, Instant now) {
         this.id = id; this.challengeId = challengeId; versionNumber = 1; status = ChallengeVersionStatus.DRAFT; this.title = title;
-        tagsAll = List.copyOf(rule.tagsAll()); difficulties = List.copyOf(rule.difficulties()); supportedLanguage = rule.supportedLanguage(); requestedQuestionCount = rule.requestedQuestionCount(); this.selectionSeed = selectionSeed; createdAt = now; updatedAt = now;
+        taxonomyAll = List.copyOf(rule.taxonomyAll()); questionTypeCodes = List.copyOf(rule.questionTypeCodes()); difficultyProfiles = List.copyOf(rule.difficultyProfiles()); contentLocales = List.copyOf(rule.contentLocales()); programmingLanguages = List.copyOf(rule.programmingLanguages()); requestedQuestionCount = rule.requestedQuestionCount(); this.selectionSeed = selectionSeed; createdAt = now; updatedAt = now;
     }
-    public UUID id() { return id; } public UUID challengeId() { return challengeId; } public int versionNumber() { return versionNumber; } public ChallengeVersionStatus status() { return status; } public String title() { return title; } public List<String> tagsAll() { return tagsAll; } public List<String> difficulties() { return difficulties; } public String supportedLanguage() { return supportedLanguage; } public int requestedQuestionCount() { return requestedQuestionCount; } public UUID selectionSeed() { return selectionSeed; }
+    public void publish(Instant now) { if (status != ChallengeVersionStatus.DRAFT) throw new IllegalStateException("Only draft challenge versions can be published"); status = ChallengeVersionStatus.PUBLISHED; updatedAt = now; }
+    public void retire(Instant now) { if (status != ChallengeVersionStatus.PUBLISHED) throw new IllegalStateException("Only published challenge versions can be retired"); status = ChallengeVersionStatus.RETIRED; updatedAt = now; }
+    public UUID id() { return id; } public UUID challengeId() { return challengeId; } public int versionNumber() { return versionNumber; } public ChallengeVersionStatus status() { return status; } public String title() { return title; } public List<TaxonomyAssignment> taxonomyAll() { return taxonomyAll; } public List<String> questionTypeCodes() { return questionTypeCodes; } public List<DifficultyProfile> difficultyProfiles() { return difficultyProfiles; } public List<String> contentLocales() { return contentLocales; } public List<String> programmingLanguages() { return programmingLanguages; } public int requestedQuestionCount() { return requestedQuestionCount; } public UUID selectionSeed() { return selectionSeed; } public long version() { return version; }
 }

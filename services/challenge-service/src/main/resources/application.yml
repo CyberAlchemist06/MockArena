@@ -14,6 +14,13 @@ spring:
     default-schema: challenge
 question-service:
   base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8081}
+challenge:
+  security:
+    enabled: ${CHALLENGE_SECURITY_ENABLED:true}
+    jwt:
+      issuer: ${MOCKARENA_JWT_ISSUER:mockarena-identity}
+      audience: ${MOCKARENA_JWT_AUDIENCE:mockarena-api}
+      public-key-path: ${MOCKARENA_JWT_PUBLIC_KEY_PATH:}
 management:
   endpoints:
     web:

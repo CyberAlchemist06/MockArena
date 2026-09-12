@@ -31,4 +31,12 @@ Services will be containerized with Docker and deployed to Kubernetes. Kubernete
 
 ## Boundaries
 
-Identity, challenges, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes. Authentication and authorization integration are deferred; organization and access concepts are retained in the domain model for that future integration.
+Identity, challenges, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes. Identity issues short-lived RS256 access tokens; Question and Challenge Services validate them locally with the configured public key and derive creator provenance from `sub`, without accessing the Identity database. Per-user authorization, organization membership, and access rules remain future work.
+
+## Generic assessment content
+
+Question Service is the generic assessment-content owner. DSA is its initial taxonomy domain rather than a platform constraint. QuestionVersions use data-driven taxonomy assignments, locale, optional difficulty scheme/code, and an extensible type code. V1 implements MCQ and CODING handlers; protected answers and hidden tests remain protected content.
+
+Challenge Service selects draft QuestionVersions through Question Service V2 using the same generic taxonomy, type-code, locale, difficulty-profile, and programming-language metadata. It stores only ordered Question and QuestionVersion identifiers.
+
+Challenge Service publishes a draft by resolving that rule into an immutable ordered manifest and records the current published version on its Challenge. Retiring that version clears the pointer without archiving the Challenge. Its protected internal resolver exposes only published, complete ChallengeVersion metadata for future composition.

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.mockarena.challenge.ChallengeSelectionMigrationTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.487 s -- in com.mockarena.challenge.ChallengeSelectionMigrationTest

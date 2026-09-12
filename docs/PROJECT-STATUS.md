@@ -34,6 +34,7 @@ Implemented:
 - Flyway migrations
 - V1 original schema
 - V2 catalog metadata
+- V3 question types (`MCQ` and `CODING`)
 - tags
 - difficulty
 - supported languages
@@ -45,7 +46,7 @@ Catalog endpoint:
 POST /internal/v1/question-versions/resolve
 
 Development seed:
-12 DSA questions.
+14 DSA questions: 12 CODING and 2 MCQ.
 
 ## Challenge Service
 

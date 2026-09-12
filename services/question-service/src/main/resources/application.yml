@@ -12,6 +12,13 @@ spring:
   flyway:
     schemas: question
     default-schema: question
+question:
+  security:
+    enabled: ${QUESTION_SECURITY_ENABLED:true}
+    jwt:
+      issuer: ${MOCKARENA_JWT_ISSUER:mockarena-identity}
+      audience: ${MOCKARENA_JWT_AUDIENCE:mockarena-api}
+      public-key-path: ${MOCKARENA_JWT_PUBLIC_KEY_PATH:}
 management:
   endpoints:
     web:

@@ -16,4 +16,15 @@ public class ChallengeCompositionRepository {
             jdbc.update("insert into challenge.challenge_version_questions (challenge_version_id, position, question_id, question_version_id) values (?, ?, ?, ?)", challengeVersionId, index + 1, entry.questionId(), entry.questionVersionId());
         }
     }
+    public void replace(UUID challengeVersionId, List<QuestionCatalogEntry> entries) {
+        jdbc.update("delete from challenge.challenge_version_questions where challenge_version_id = ?", challengeVersionId);
+        save(challengeVersionId, entries);
+    }
+    public List<QuestionCatalogEntry> findByChallengeVersionId(UUID challengeVersionId) {
+        return jdbc.query("select question_id, question_version_id from challenge.challenge_version_questions where challenge_version_id = ? order by position", (rs, row) -> new QuestionCatalogEntry(rs.getObject("question_id", UUID.class), rs.getObject("question_version_id", UUID.class)), challengeVersionId);
+    }
+    public int countByChallengeVersionId(UUID challengeVersionId) {
+        Integer result = jdbc.queryForObject("select count(*) from challenge.challenge_version_questions where challenge_version_id = ?", Integer.class, challengeVersionId);
+        return result == null ? 0 : result;
+    }
 }

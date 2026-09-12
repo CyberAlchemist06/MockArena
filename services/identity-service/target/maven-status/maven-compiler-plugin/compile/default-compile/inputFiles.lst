@@ -1,0 +1,16 @@
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\api\ApiExceptionHandler.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\api\AuthController.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\api\IdentityDtos.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\api\UserController.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\application\AuthenticationService.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\application\DuplicateEmailException.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\application\InvalidCredentialsException.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\application\TokenService.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\config\DevAdminBootstrap.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\config\JwtProperties.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\config\SecurityConfiguration.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\domain\IdentityUser.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\domain\IdentityUserRepository.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\domain\UserRole.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\domain\UserStatus.java
+D:\MockArena\services\identity-service\src\main\java\com\mockarena\identity\IdentityServiceApplication.java

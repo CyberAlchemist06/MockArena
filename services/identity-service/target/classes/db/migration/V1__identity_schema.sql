@@ -1,0 +1,3 @@
+CREATE SCHEMA IF NOT EXISTS identity;
+CREATE TABLE identity.users (id UUID PRIMARY KEY, email VARCHAR(320) NOT NULL, display_name VARCHAR(120) NOT NULL, password_hash VARCHAR(500) NOT NULL, status VARCHAR(16) NOT NULL, version BIGINT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, CONSTRAINT users_email_unique UNIQUE (email), CONSTRAINT users_status_check CHECK (status IN ('ACTIVE', 'SUSPENDED', 'DEACTIVATED')));
+CREATE TABLE identity.user_roles (user_id UUID NOT NULL REFERENCES identity.users(id), role_code VARCHAR(64) NOT NULL, PRIMARY KEY (user_id, role_code), CONSTRAINT user_roles_code_check CHECK (role_code IN ('USER', 'ADMIN')));

@@ -10,6 +10,7 @@ import com.mockarena.question.domain.QuestionRepository;
 import com.mockarena.question.domain.QuestionVersion;
 import com.mockarena.question.domain.QuestionVersionRepository;
 import com.mockarena.question.domain.QuestionVersionStatus;
+import com.mockarena.question.domain.QuestionType;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -44,7 +45,7 @@ public class DevelopmentQuestionSeed implements ApplicationRunner {
                 .filter(question -> versionRepository.findByQuestionIdOrderByVersionNumberDesc(question.id()).stream().anyMatch(version -> version.title().equals(seed.title())))
                 .findFirst().orElse(null);
         if (existing == null) {
-            QuestionVersion created = questions.create(new QuestionDtos.CreateQuestionRequest(DEVELOPMENT_SEED_OWNER_ID, content(seed)));
+            QuestionVersion created = questions.create(new QuestionDtos.CreateQuestionRequest(content(seed)), DEVELOPMENT_SEED_OWNER_ID);
             questions.publish(created.questionId(), created.versionNumber(), new QuestionDtos.PublishVersionRequest(0, 0));
             return;
         }
@@ -56,10 +57,14 @@ public class DevelopmentQuestionSeed implements ApplicationRunner {
     }
 
     private QuestionDtos.ContentRequest content(SeedQuestion seed) {
-        return new QuestionDtos.ContentRequest(seed.title(), seed.tags(), seed.difficulty(), seed.prompt(), seed.constraints(),
+        if (seed.questionType() == QuestionType.MCQ) {
+            return new QuestionDtos.ContentRequest(seed.title(), seed.tags(), seed.difficulty(), QuestionType.MCQ, seed.prompt(), null,
+                    null, null, null, null, null, null, seed.options(), seed.correctOptionId(), seed.explanation());
+        }
+        return new QuestionDtos.ContentRequest(seed.title(), seed.tags(), seed.difficulty(), QuestionType.CODING, seed.prompt(), seed.constraints(),
                 cases(seed.exampleInput(), seed.exampleOutput()), array("JAVA"), cases(seed.visibleInput(), seed.visibleOutput()),
                 cases(seed.hiddenInput(), seed.hiddenOutput()), object(Map.of("maxPoints", 100, "strategy", "ALL_OR_NOTHING")),
-                object(Map.of("timeMs", 1000, "memoryMb", 256)));
+                object(Map.of("timeMs", 1000, "memoryMb", 256)), null, null, null);
     }
 
     private JsonNode array(String value) { return object(List.of(value)); }
@@ -79,15 +84,23 @@ public class DevelopmentQuestionSeed implements ApplicationRunner {
                 q("First and Last Position", "binary-search,arrays", Difficulty.MEDIUM, "Find target's first and last position in a sorted array.", "Return [-1,-1] when absent.", "nums=[5,7,7,8,8,10], target=8", "[3,4]", "nums=[5,7,7,8,8,10], target=6", "[-1,-1]"),
                 q("Maximum Depth of Binary Tree", "trees,dfs", Difficulty.EASY, "Return the maximum root-to-leaf node depth.", "Use level-order null markers for trees.", "root=[3,9,20,null,null,15,7]", "3", "root=[]", "0"),
                 q("Binary Tree Level Order Traversal", "trees,bfs", Difficulty.MEDIUM, "Return node values grouped by tree level.", "Use level-order null markers for trees.", "root=[3,9,20,null,null,15,7]", "[[3],[9,20],[15,7]]", "root=[]", "[]"),
-                q("Number of Islands", "graphs,bfs,dfs", Difficulty.MEDIUM, "Count islands connected horizontally or vertically in a grid.", "Grid cells are 0 or 1.", "grid=[[1,1,0],[1,0,0],[0,0,1]]", "2", "grid=[[0,0],[0,0]]", "0"));
+                q("Number of Islands", "graphs,bfs,dfs", Difficulty.MEDIUM, "Count islands connected horizontally or vertically in a grid.", "Grid cells are 0 or 1.", "grid=[[1,1,0],[1,0,0],[0,0,1]]", "2", "grid=[[0,0],[0,0]]", "0"),
+                mcq("BST Traversal Order", "trees,bst", Difficulty.EASY, "Which traversal of a binary search tree returns values in ascending order?", "inorder", "Inorder traversal visits BST values in sorted order.", "preorder", "Preorder traversal", "inorder", "Inorder traversal", "postorder", "Postorder traversal"),
+                mcq("Fast Membership Lookup", "hashing,arrays", Difficulty.EASY, "Which data structure gives average O(1) membership checks?", "hash-set", "A hash set provides average constant-time membership checks.", "array", "Sorted array", "hash-set", "Hash set", "linked-list", "Linked list"));
     }
 
     private static SeedQuestion q(String title, String tags, Difficulty difficulty, String prompt, String constraints, String visibleInput, String visibleOutput, String hiddenInput, String hiddenOutput) {
-        return new SeedQuestion(title, List.of(tags.split(",")), difficulty, prompt, constraints, visibleInput, visibleOutput, hiddenInput, hiddenOutput);
+        return new SeedQuestion(title, List.of(tags.split(",")), difficulty, QuestionType.CODING, prompt, constraints, visibleInput, visibleOutput, hiddenInput, hiddenOutput, null, null, null);
     }
 
-    record SeedQuestion(String title, List<String> tags, Difficulty difficulty, String prompt, String constraints,
-                        String visibleInput, String visibleOutput, String hiddenInput, String hiddenOutput) {
+    private static SeedQuestion mcq(String title, String tags, Difficulty difficulty, String prompt, String correctOptionId, String explanation, String... optionPairs) {
+        List<QuestionDtos.McqOptionRequest> options = java.util.stream.IntStream.range(0, optionPairs.length / 2)
+                .mapToObj(index -> new QuestionDtos.McqOptionRequest(optionPairs[index * 2], optionPairs[index * 2 + 1])).toList();
+        return new SeedQuestion(title, List.of(tags.split(",")), difficulty, QuestionType.MCQ, prompt, null, null, null, null, null, options, correctOptionId, explanation);
+    }
+
+    record SeedQuestion(String title, List<String> tags, Difficulty difficulty, QuestionType questionType, String prompt, String constraints,
+                        String visibleInput, String visibleOutput, String hiddenInput, String hiddenOutput, List<QuestionDtos.McqOptionRequest> options, String correctOptionId, String explanation) {
         String exampleInput() { return visibleInput; }
         String exampleOutput() { return visibleOutput; }
     }

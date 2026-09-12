@@ -1,8 +1,22 @@
 # Question Service
 
-The Question Service owns versioned DSA question content in the PostgreSQL `question` schema. Its APIs are under `/api/v1/questions`.
+The Question Service owns versioned assessment content in the PostgreSQL `question` schema. Its APIs are under `/api/v1/questions`.
 
-Hidden tests are persisted as JSONB for V1, but are deliberately excluded from every HTTP response and entity `toString`. `ownerUserId` is provenance metadata only; no authorization decision is implemented until Identity/Security is integrated.
+Hidden tests are persisted as JSONB for V1, but are deliberately excluded from every HTTP response and entity `toString`.
+
+## Authentication
+
+External Question APIs require a MockArena Identity RS256 bearer token. The service verifies its signature, issuer, audience, and expiry locally; it does not access the Identity Service database. `POST /api/v1/questions` derives the owner from the token `sub` claim. `ownerUserId` is not part of the write contract and cannot control ownership if supplied by an older client.
+
+Configure the Identity public key outside source control before starting the service:
+
+```powershell
+$env:MOCKARENA_JWT_PUBLIC_KEY_PATH = "D:\MockArena\secrets\identity-jwt-public.pem"
+$env:MOCKARENA_JWT_ISSUER = "mockarena-identity"
+$env:MOCKARENA_JWT_AUDIENCE = "mockarena-api"
+```
+
+The `/actuator/health` endpoints remain public. The `/internal/**` catalog APIs intentionally remain a service boundary without end-user JWT authentication until workload authentication is introduced; they never expose question content or protected answer data.
 
 Challenge Service can query the metadata-only internal catalog at `POST /internal/v1/question-versions/resolve`. It returns only currently reusable published QuestionVersions and never returns question prompts, constraints, examples, tests, scoring, or execution limits. Authentication for this internal route is intentionally deferred in V1.
 
@@ -14,7 +28,7 @@ Run tests from this directory with `./mvnw.cmd test`. The first run downloads Ma
 
 ## Development seed data
 
-To seed the 12 original development questions, run with the `dev` profile and an explicit opt-in flag:
+To seed the 14 development questions (12 CODING and 2 MCQ), run with the `dev` profile and an explicit opt-in flag:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE = "dev"

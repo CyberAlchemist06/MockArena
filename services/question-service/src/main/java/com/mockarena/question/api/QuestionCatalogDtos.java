@@ -2,6 +2,7 @@ package com.mockarena.question.api;
 
 import com.mockarena.question.application.QuestionVersionCatalogEntry;
 import com.mockarena.question.domain.Difficulty;
+import com.mockarena.question.domain.QuestionType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -27,9 +28,10 @@ public final class QuestionCatalogDtos {
             String title,
             List<String> tags,
             Difficulty difficulty,
+            QuestionType questionType,
             List<String> supportedLanguages) {
         static QuestionVersionCatalogEntryResponse from(QuestionVersionCatalogEntry entry) {
-            return new QuestionVersionCatalogEntryResponse(entry.questionId(), entry.questionVersionId(), entry.versionNumber(), entry.title(), entry.tags(), entry.difficulty(), entry.supportedLanguages());
+            return new QuestionVersionCatalogEntryResponse(entry.questionId(), entry.questionVersionId(), entry.versionNumber(), entry.title(), entry.tags(), entry.difficulty(), entry.questionType(), entry.supportedLanguages());
         }
     }
 

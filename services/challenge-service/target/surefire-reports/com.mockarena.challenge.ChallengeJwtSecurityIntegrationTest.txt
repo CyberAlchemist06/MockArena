@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.mockarena.challenge.ChallengeJwtSecurityIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 21.79 s -- in com.mockarena.challenge.ChallengeJwtSecurityIntegrationTest

@@ -30,7 +30,7 @@ import static org.mockito.Mockito.reset;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = "question.security.enabled=false")
 @AutoConfigureMockMvc
 @Testcontainers
 @Transactional
@@ -110,6 +110,65 @@ class QuestionServiceIntegrationTest {
             .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
+    @Test void createsValidMcqAndNeverExposesItsCorrectAnswer() throws Exception {
+        String response = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.questionType").value("MCQ"))
+            .andExpect(jsonPath("$.options.length()").value(3))
+            .andExpect(jsonPath("$.options[1].id").value("inorder"))
+            .andExpect(jsonPath("$.correctOptionId").doesNotExist())
+            .andExpect(jsonPath("$.explanation").doesNotExist())
+            .andExpect(jsonPath("$.hiddenTests").doesNotExist())
+            .andReturn().getResponse().getContentAsString();
+        assertThat(response).doesNotContain("inorder traversal is sorted");
+        assertThat(response).doesNotContain("correctOptionId");
+    }
+
+    @Test void rejectsMcqWithFewerThanTwoOptionsInvalidCorrectOptionOrDuplicateOptionIds() throws Exception {
+        assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("{\"id\":\"preorder\",\"text\":\"Preorder\"},{\"id\":\"inorder\",\"text\":\"Inorder\"},{\"id\":\"postorder\",\"text\":\"Postorder\"}", "{\"id\":\"preorder\",\"text\":\"Preorder\"}"));
+        assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("\"correctOptionId\":\"inorder\"", "\"correctOptionId\":\"missing\""));
+        assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("\"id\":\"postorder\"", "\"id\":\"inorder\""));
+    }
+
+    @Test void rejectsMixedTypeSpecificContent() throws Exception {
+        assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("\"options\":", "\"examples\":[],\"options\":"));
+        assertInvalidContent(validRequest(UUID.randomUUID()).replace("\"executionLimits\":{\"timeMs\":1000}", "\"executionLimits\":{\"timeMs\":1000},\"options\":[{\"id\":\"a\",\"text\":\"A\"},{\"id\":\"b\",\"text\":\"B\"}],\"correctOptionId\":\"a\""));
+    }
+
+    @Test void rejectsTypeChangeOnUpdateButAllowsMcqRevision() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        UUID questionId = UUID.fromString(json.readTree(created).required("questionId").asText());
+        mvc.perform(put("/api/v1/questions/{id}/versions/1", questionId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedVersion\":0,\"content\":" + contentOnly(validMcqRequest(UUID.randomUUID())) + "}"))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("INVALID_STATE"));
+        mvc.perform(post("/api/v1/questions/{id}/versions", questionId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedQuestionVersion\":0,\"content\":" + contentOnly(validMcqRequest(UUID.randomUUID())) + "}"))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.versionNumber").value(2)).andExpect(jsonPath("$.questionType").value("MCQ"));
+    }
+
+    @Test void catalogReturnsQuestionTypeButNeverMcqContent() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        UUID questionId = UUID.fromString(json.readTree(created).required("questionId").asText());
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", questionId).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+        mvc.perform(post("/internal/v1/question-versions/resolve").contentType(MediaType.APPLICATION_JSON).content(catalogRequest("[\"trees\"]", "[\"EASY\"]", null)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].questionType").value("MCQ"))
+            .andExpect(jsonPath("$.entries[0].prompt").doesNotExist()).andExpect(jsonPath("$.entries[0].options").doesNotExist())
+            .andExpect(jsonPath("$.entries[0].correctOptionId").doesNotExist()).andExpect(jsonPath("$.entries[0].explanation").doesNotExist());
+    }
+
+    @Test void publishedMcqIsImmutableInDatabase() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        UUID questionId = UUID.fromString(json.readTree(created).required("questionId").asText());
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", questionId).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+        assertThatThrownBy(() -> jdbc.update("update question.question_versions set correct_option_id = 'preorder' where question_id = ?", questionId))
+            .hasMessageContaining("published question versions are immutable");
+    }
+
     @Test void catalogReturnsOnlyPublishedCurrentVersionsAndOnlyApprovedFields() throws Exception {
         UUID questionId=UUID.randomUUID();
         UUID oldVersion=insertCatalogVersion(questionId, 1, "PUBLISHED", "Old", List.of("arrays"), "EASY", List.of("JAVA"));
@@ -134,7 +193,7 @@ class QuestionServiceIntegrationTest {
             .andExpect(jsonPath("$.entries[0].executionLimits").doesNotExist())
             .andReturn().getResponse().getContentAsString();
         assertThat(json.readTree(response).required("entries").get(0).properties().stream().map(Map.Entry::getKey).collect(Collectors.toSet()))
-            .isEqualTo(Set.of("questionId", "questionVersionId", "versionNumber", "title", "tags", "difficulty", "supportedLanguages"));
+            .isEqualTo(Set.of("questionId", "questionVersionId", "versionNumber", "title", "tags", "difficulty", "questionType", "supportedLanguages"));
         assertThat(oldVersion).isNotEqualTo(currentVersion);
     }
 
@@ -167,6 +226,38 @@ class QuestionServiceIntegrationTest {
             .andExpect(jsonPath("$.entries").isEmpty());
     }
 
+    @Test void v2CatalogFiltersGenericMetadataAndNeverSerializesProtectedContent() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String questionId = json.readTree(created).required("questionId").asText();
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", questionId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+
+        String request = """
+                {"taxonomyAll":[{"scheme":"topic","code":"arrays"}],
+                 "questionTypeCodes":["CODING"],
+                 "difficultyProfiles":[{"scheme":"mockarena-v1","code":"EASY"}],
+                 "contentLocales":["en"],"programmingLanguages":["JAVA"],"limit":1}
+                """;
+        mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries.length()").value(1))
+            .andExpect(jsonPath("$.entries[0].questionTypeCode").value("CODING"))
+            .andExpect(jsonPath("$.entries[0].contentLocale").value("en"))
+            .andExpect(jsonPath("$.entries[0].difficultyProfile.scheme").value("mockarena-v1"))
+            .andExpect(jsonPath("$.entries[0].prompt").doesNotExist())
+            .andExpect(jsonPath("$.entries[0].hiddenTests").doesNotExist())
+            .andExpect(jsonPath("$.entries[0].correctOptionId").doesNotExist())
+            .andExpect(jsonPath("$.entries[0].defaultScoringPolicy").doesNotExist());
+    }
+
+    @Test void v3DefaultsExistingStyleRowsToCoding() throws Exception {
+        UUID questionId = UUID.randomUUID();
+        UUID versionId = insertCatalogVersion(questionId, 1, "PUBLISHED", "Legacy coding", List.of("arrays"), "EASY", List.of("JAVA"));
+        assertThat(jdbc.queryForObject("select question_type from question.question_versions where id = ?", String.class, versionId)).isEqualTo("CODING");
+    }
+
     private void assertValidationFailure(String body) throws Exception {
         mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isBadRequest())
@@ -180,12 +271,26 @@ class QuestionServiceIntegrationTest {
 
     private static String validRequest(UUID ownerUserId) {
         return """
-          {"ownerUserId":"%s","content":{"title":"Two Sum","tags":["arrays"],"difficulty":"EASY","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"hiddenTests":[{"input":"secret-input","output":"secret-output"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000}}}
+          {"ownerUserId":"%s","content":{"title":"Two Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"hiddenTests":[{"input":"secret-input","output":"secret-output"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000}}}
           """.formatted(ownerUserId);
     }
 
+    private static String validMcqRequest(UUID ownerUserId) {
+        return """
+          {"ownerUserId":"%s","content":{"title":"BST Traversal","tags":["trees"],"difficulty":"EASY","questionType":"MCQ","prompt":"Which traversal is sorted?","options":[{"id":"preorder","text":"Preorder"},{"id":"inorder","text":"Inorder"},{"id":"postorder","text":"Postorder"}],"correctOptionId":"inorder","explanation":"inorder traversal is sorted"}}
+          """.formatted(ownerUserId);
+    }
+
+    private static String contentOnly(String request) { return request.substring(request.indexOf("\"content\":") + 10, request.length() - 1); }
+
+    private void assertInvalidContent(String body) throws Exception {
+        mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
     private String catalogRequest(String tagsAll, String difficulties, String supportedLanguage) {
-        return "{\"tagsAll\":%s,\"difficulties\":%s,\"supportedLanguage\":\"%s\",\"limit\":20}".formatted(tagsAll, difficulties, supportedLanguage);
+        String language = supportedLanguage == null ? "null" : "\"%s\"".formatted(supportedLanguage);
+        return "{\"tagsAll\":%s,\"difficulties\":%s,\"supportedLanguage\":%s,\"limit\":20}".formatted(tagsAll, difficulties, language);
     }
 
     private UUID insertCatalogVersion(UUID questionId, int versionNumber, String status, String title, List<String> tags, String difficulty, List<String> supportedLanguages) throws Exception {

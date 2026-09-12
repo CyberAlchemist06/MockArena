@@ -14,14 +14,16 @@ public class RestQuestionCatalogClient implements QuestionCatalogClient {
     public RestQuestionCatalogClient(@Value("${question-service.base-url}") String baseUrl) { client = RestClient.builder().baseUrl(baseUrl).build(); }
     @Override public List<QuestionCatalogEntry> resolve(RuleBasedSelection selection) {
         try {
-            CatalogResponse response = client.post().uri("/internal/v1/question-versions/resolve")
-                    .body(new CatalogRequest(selection.tagsAll(), selection.difficulties(), selection.supportedLanguage(), 100))
+            CatalogResponse response = client.post().uri("/internal/v2/question-versions/resolve")
+                    .body(new CatalogRequest(selection.taxonomyAll(), selection.questionTypeCodes(), selection.difficultyProfiles(), selection.contentLocales(), selection.programmingLanguages(), 100))
                     .retrieve().body(CatalogResponse.class);
             if (response == null || response.entries() == null) throw new QuestionCatalogUnavailableException();
             return response.entries().stream().map(entry -> new QuestionCatalogEntry(entry.questionId(), entry.questionVersionId())).toList();
         } catch (RestClientException exception) { throw new QuestionCatalogUnavailableException(exception); }
     }
-    record CatalogRequest(List<String> tagsAll, List<String> difficulties, String supportedLanguage, int limit) { }
+    record CatalogRequest(List<com.mockarena.challenge.domain.TaxonomyAssignment> taxonomyAll, List<String> questionTypeCodes,
+                          List<com.mockarena.challenge.domain.DifficultyProfile> difficultyProfiles, List<String> contentLocales,
+                          List<String> programmingLanguages, int limit) { }
     record CatalogResponse(List<CatalogEntryResponse> entries) { }
-    record CatalogEntryResponse(UUID questionId, UUID questionVersionId) { }
+    record CatalogEntryResponse(UUID questionId, UUID questionVersionId, int versionNumber) { }
 }

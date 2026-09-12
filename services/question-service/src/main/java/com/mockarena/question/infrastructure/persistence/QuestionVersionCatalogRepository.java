@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mockarena.question.application.QuestionVersionCatalogEntry;
 import com.mockarena.question.application.QuestionVersionCatalogService.Criteria;
 import com.mockarena.question.domain.Difficulty;
+import com.mockarena.question.domain.QuestionType;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -27,11 +28,13 @@ public class QuestionVersionCatalogRepository {
     public List<QuestionVersionCatalogEntry> resolve(Criteria criteria) {
         StringBuilder sql = new StringBuilder("""
             SELECT qv.question_id, qv.id AS question_version_id, qv.version_number, qv.title,
-                   qv.tags, qv.difficulty, qv.supported_languages
+                   qv.tags, qv.difficulty, qv.question_type, qv.supported_languages
               FROM question.question_versions qv
-              JOIN question.questions q ON q.current_version_id = qv.id
+             JOIN question.questions q ON q.current_version_id = qv.id
              WHERE q.lifecycle_status = 'PUBLISHED'
                AND qv.status = 'PUBLISHED'
+               AND qv.difficulty IS NOT NULL
+               AND qv.question_type IN ('MCQ', 'CODING')
             """);
         MapSqlParameterSource parameters = new MapSqlParameterSource().addValue("limit", criteria.limit());
         if (!criteria.tagsAll().isEmpty()) {
@@ -58,10 +61,12 @@ public class QuestionVersionCatalogRepository {
                 resultSet.getString("title"),
                 readStrings(resultSet.getString("tags")),
                 Difficulty.valueOf(resultSet.getString("difficulty")),
+                QuestionType.valueOf(resultSet.getString("question_type")),
                 readStrings(resultSet.getString("supported_languages")));
     }
 
     private List<String> readStrings(String value) {
+        if (value == null) return List.of();
         try {
             return objectMapper.readValue(value, STRING_LIST);
         } catch (JsonProcessingException e) {

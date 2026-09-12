@@ -18,4 +18,5 @@ public class QuestionCatalogController {
     public QuestionCatalogDtos.ResolveQuestionVersionsResponse resolve(@Valid @RequestBody QuestionCatalogDtos.ResolveQuestionVersionsRequest request) {
         return QuestionCatalogDtos.ResolveQuestionVersionsResponse.from(catalog.resolve(request));
     }
+
 }

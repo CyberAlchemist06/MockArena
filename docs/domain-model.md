@@ -19,10 +19,10 @@ A **Challenge** is a reusable, user-created learning or assessment asset. It may
 
 - **Purpose:** Reusable container and ownership boundary for one or more DSA Questions, authored by a user and available for later assessment composition.
 - **Owner:** Challenge Service.
-- **Important fields:** `challengeId`, `ownerUserId`, optional organization scope, visibility (`PRIVATE`, `SHARED`, `PUBLIC`, or `ORGANIZATION_ONLY`), lifecycle status, current published-version reference, and timestamps. Title and summary belong to the versioned content snapshot.
+- **Important fields:** `challengeId`, `createdByUserId`, optional organization scope, visibility (`PRIVATE`, `SHARED`, `PUBLIC`, or `ORGANIZATION_ONLY`), lifecycle status, current published-version reference, and timestamps. Title and summary belong to the versioned content snapshot.
 - **Lifecycle/status:** `draft`, `published`, or `archived`. Publishing makes a selected ChallengeVersion available for reuse; archiving stops new use without rewriting historical references.
 - **Relationships:** Has many ChallengeVersions; belongs to its creator and optional organization scope; may have explicit user or organization access grants when shared. AssessmentVersions reference ChallengeVersions, never the mutable Challenge directly.
-- **Mutable data:** Ownership scope, visibility, access grants, lifecycle status, and current-version reference are mutable. Organization and access concepts are modeled now but are not enforced until Identity/Security integration. Published content is not stored as mutable Challenge data.
+- **Mutable data:** Ownership scope, visibility, access grants, lifecycle status, and current-version reference are mutable. `createdByUserId` is derived from the authenticated Identity JWT subject when a Challenge is created. Organization and access concepts are modeled now but are not enforced until per-user/organization authorization is added. Published content is not stored as mutable Challenge data.
 
 ## ChallengeVersion
 
@@ -113,6 +113,14 @@ A **Challenge** is a reusable, user-created learning or assessment asset. It may
 - **Lifecycle/status:** `pending`, `ranked`, `released`, `hidden`, or `superseded`. Only completed Attempts of the same published AssessmentVersion are included in its ranking and percentile population.
 - **Relationships:** Belongs to one AssessmentVersion and represents one eligible Attempt; derives from the assessment-level Score. Identity data is displayed using an Identity Service reference or approved projection.
 - **Mutable data:** Rank, percentile, visibility, and calculated timestamp may be recalculated as completed attempts arrive. The referenced assessment version, attempt, and underlying final-score snapshot remain immutable for each calculation record; recalculation is auditable.
+
+## Generic content metadata
+
+QuestionVersion metadata is domain-neutral: question-type code, BCP-47 content locale, data-driven taxonomy assignments, optional difficulty scheme/code, programming-language policy when applicable, and a scoring-policy envelope. DSA, country, exam-family, subject, and competency labels are taxonomy data, never Java enums.
+
+ChallengeVersion rule-based selection uses that same generic metadata: taxonomy assignments, question-type codes, difficulty profiles, content locales, programming languages, and a requested count. The draft rule is mutable only while authoring; its resolved ID-only manifest is the composition boundary.
+
+Publishing replaces the draft preview with a complete, deterministic manifest and updates Challenge's current published-version reference. Retirement preserves the manifest but clears that reference if it is current; it does not archive the Challenge.
 
 ## Primary relationship flow
 
