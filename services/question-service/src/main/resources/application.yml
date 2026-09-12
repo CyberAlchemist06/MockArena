@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: question-service
+  datasource:
+    url: ${QUESTION_DATABASE_URL:jdbc:postgresql://localhost:5432/mockarena}
+    username: ${QUESTION_DATABASE_USERNAME:mockarena}
+    password: ${QUESTION_DATABASE_PASSWORD:mockarena}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    schemas: question
+    default-schema: question
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
