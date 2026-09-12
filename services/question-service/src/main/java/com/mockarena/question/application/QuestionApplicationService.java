@@ -42,5 +42,5 @@ public class QuestionApplicationService {
         v.publish(clock.instant()); versions.saveAndFlush(v); q.setCurrentVersion(v.id(), QuestionStatus.PUBLISHED, clock.instant()); questions.saveAndFlush(q); return v;
     }
     private static void assertVersion(long actual, long expected) { if(actual != expected) throw new OptimisticLockException("Stale resource version"); }
-    private static QuestionVersion.Content content(ContentRequest c) { return new QuestionVersion.Content(c.title(),c.prompt(),c.constraintsText(),c.examples(),c.supportedLanguages(),c.visibleTests(),c.hiddenTests(),c.scoringRules(),c.executionLimits()); }
+    private static QuestionVersion.Content content(ContentRequest c) { return new QuestionVersion.Content(c.title(),c.tags(),c.difficulty(),c.prompt(),c.constraintsText(),c.examples(),c.supportedLanguages(),c.visibleTests(),c.hiddenTests(),c.scoringRules(),c.executionLimits()); }
 }

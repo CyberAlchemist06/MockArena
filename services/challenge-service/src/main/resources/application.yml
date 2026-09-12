@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: challenge-service
+  datasource:
+    url: ${CHALLENGE_DATABASE_URL:jdbc:postgresql://localhost:5432/mockarena}
+    username: ${CHALLENGE_DATABASE_USERNAME:mockarena}
+    password: ${CHALLENGE_DATABASE_PASSWORD:mockarena}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    schemas: challenge
+    default-schema: challenge
+question-service:
+  base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8081}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

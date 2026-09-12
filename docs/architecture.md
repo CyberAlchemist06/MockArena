@@ -2,14 +2,15 @@
 
 ## Overview
 
-MockArena V1 consists of four deployable Java 21 and Spring Boot services, exposed through versioned APIs to a Next.js/TypeScript web application. Services collaborate through explicit APIs and Kafka events. Ranking remains a module in Assessment Service for V1.
+MockArena V1 consists of five deployable Java 21 and Spring Boot services, exposed through versioned APIs to a Next.js/TypeScript web application. Services collaborate through explicit APIs and Kafka events. Ranking remains a module in Assessment Service for V1.
 
 ## Deployable services
 
 - **Web application** — Next.js UI for candidates and organization administrators.
 - **Identity Service** — organization membership, candidate and administrator identities, authentication, authorization, and access rules.
-- **Question Service** — DSA challenge authoring, visible and hidden test content, and immutable published challenge versions.
-- **Assessment Service** — assessment composition and publication, invitations, attempts, result release, scoring, percentiles, and the ranking/leaderboard module. Published assessment versions reference immutable challenge versions.
+- **Challenge Service** — user-created challenge authoring, sharing/visibility policy, dynamic question selection while drafting, and immutable published challenge versions. Published ChallengeVersions retain only ordered QuestionVersion references.
+- **Question Service** — reusable DSA question authoring, visible and hidden test content, and immutable published QuestionVersions. It does not own Challenge or ChallengeVersion data.
+- **Assessment Service** — assessment composition and publication, invitations, attempts, result release, scoring, percentiles, and the ranking/leaderboard module. Published assessment versions reference immutable ChallengeVersions.
 - **Evaluation Service** — accepts evaluation work asynchronously and operates isolated candidate-code execution environments. It returns evaluation outcomes; it does not own assessment ranking or results presentation.
 
 ## Data ownership
@@ -18,7 +19,7 @@ PostgreSQL is the durable system of record. Services may use one PostgreSQL clus
 
 ## Content and ranking semantics
 
-Challenge and assessment content is versioned. Once published, a version is immutable; changes require a new version. Attempts, submissions, scores, percentiles, and leaderboard entries retain the assessment version they belong to. Percentile and ranking population consists only of completed attempts for the same published assessment version.
+Challenge, question, and assessment content is versioned. A draft ChallengeVersion may use either explicit QuestionVersion references or rule-based criteria evaluated through Question Service. Publishing resolves those criteria and freezes the resulting ordered QuestionVersion manifest. Published ChallengeVersions do not copy QuestionVersion content; Question Service remains its owner. Once published, a version is immutable; changes require a new version. Attempts, submissions, scores, percentiles, and leaderboard entries retain the assessment version they belong to. Percentile and ranking population consists only of completed attempts for the same published assessment version.
 
 ## Data and event flow
 
@@ -30,4 +31,4 @@ Services will be containerized with Docker and deployed to Kubernetes. Kubernete
 
 ## Boundaries
 
-Identity, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes.
+Identity, challenges, questions, assessments/ranking, and evaluation own their respective rules and data. Cross-boundary updates use explicit APIs or Kafka events, not shared internal models or database writes. Authentication and authorization integration are deferred; organization and access concepts are retained in the domain model for that future integration.
