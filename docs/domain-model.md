@@ -1,0 +1,119 @@
+# Domain model — V1
+
+## Model rules
+
+The model is split by service ownership. Cross-service relationships use stable IDs and version IDs delivered through APIs or events; they are not database foreign keys across service schemas. PostgreSQL is authoritative for each owner's data.
+
+A **Challenge** is a reusable, user-created learning or assessment asset. It may be private, shared with an organization, or published for authorized reuse; candidate-created and shared challenges use the same first-class model as administrator-created challenges. A **Question** is a problem unit within a challenge. Content is snapshotted through immutable published versions: an AssessmentVersion selects ChallengeVersions, and a ChallengeVersion selects QuestionVersions.
+
+## User
+
+- **Purpose:** Represents an authenticated person acting as a candidate, challenge author, or organization administrator.
+- **Owner:** Identity Service.
+- **Important fields:** `userId`, display name, verified email or external identity reference, status, organization memberships, and role assignments.
+- **Lifecycle/status:** `active`, `suspended`, or `deactivated`. Membership and roles may change independently of the user record.
+- **Relationships:** Creates Challenges; starts Attempts; is the candidate represented by Scores and LeaderboardEntries. Other services retain `userId` references only.
+- **Mutable data:** Identity profile, status, memberships, and roles are mutable. The stable `userId` is immutable.
+
+## Challenge
+
+- **Purpose:** Reusable container and ownership boundary for one or more DSA Questions, authored by a user and available for later assessment composition.
+- **Owner:** Question Service.
+- **Important fields:** `challengeId`, `ownerUserId`, organization scope, title/summary, visibility (`private`, `organization-shared`, or `published`), current version reference, and timestamps.
+- **Lifecycle/status:** `draft`, `published`, or `archived`. Publishing makes a selected ChallengeVersion available for reuse; archiving stops new use without rewriting historical references.
+- **Relationships:** Has many ChallengeVersions; belongs to its creator and optional organization scope. AssessmentVersions reference ChallengeVersions, never the mutable Challenge directly.
+- **Mutable data:** Ownership scope, visibility, lifecycle status, and current-version reference are mutable. Published content is not stored as mutable Challenge data.
+
+## ChallengeVersion
+
+- **Purpose:** A versioned snapshot of a Challenge used for publishing and reuse.
+- **Owner:** Question Service.
+- **Important fields:** `challengeVersionId`, `challengeId`, version number, title/description snapshot, authoring metadata, ordered `questionVersionIds`, publication metadata, and status.
+- **Lifecycle/status:** `draft`, `published`, or `retired`. A draft may be edited; publishing makes it immutable. Retiring prevents new composition while preserving existing use.
+- **Relationships:** Belongs to one Challenge and references one or more QuestionVersions. An AssessmentVersion composes exact ChallengeVersions.
+- **Immutable data:** All content, ordering, rules, and QuestionVersion references are immutable after publication. Corrections create a new version.
+
+## Question
+
+- **Purpose:** Reusable DSA problem identity within a Challenge, separating a durable problem record from its versioned executable content.
+- **Owner:** Question Service.
+- **Important fields:** `questionId`, parent `challengeId`, creator reference, current version reference, internal tags, and lifecycle status.
+- **Lifecycle/status:** `draft`, `published`, or `archived`. Publication occurs through a QuestionVersion selected by a ChallengeVersion.
+- **Relationships:** Belongs to a Challenge and has many QuestionVersions. ChallengeVersions reference QuestionVersions by ID.
+- **Mutable data:** Current-version reference, internal tags, and lifecycle status may change. Published problem content is immutable in QuestionVersion.
+
+## QuestionVersion
+
+- **Purpose:** Immutable, gradable definition of a DSA problem.
+- **Owner:** Question Service.
+- **Important fields:** `questionVersionId`, `questionId`, version number, prompt, constraints, examples, supported-language policy, visible and hidden test definitions or protected test references, scoring rules, and execution limits.
+- **Lifecycle/status:** `draft`, `published`, or `retired`. Only published versions may be included in a published ChallengeVersion.
+- **Relationships:** Belongs to one Question; is selected by a ChallengeVersion; is indirectly included in AssessmentVersions, Submissions, and Evaluations through the selected ChallengeVersion.
+- **Immutable data:** After publication, prompt, tests, scoring, supported languages, and execution limits cannot change. A revision creates a new QuestionVersion.
+
+## Assessment
+
+- **Purpose:** Reusable container for an assessment and its publication lifecycle. An Assessment may be created by an individual user, an organization, or the MockArena system.
+- **Owner:** Assessment Service.
+- **Important fields:** `assessmentId`, `creatorType` (`USER`, `ORGANIZATION`, or `SYSTEM`), optional `creatorUserId`, optional `organizationId`, title/summary, visibility (`PRIVATE`, `SHARED`, `PUBLIC`, or `ORGANIZATION_ONLY`), access policy, current version reference, and lifecycle status. `creatorUserId` is required for `USER`; `organizationId` is required for `ORGANIZATION`; system-created assessments need neither. The other identifier remains optional where it supplies provenance or scope.
+- **Lifecycle/status:** `draft`, `published`, `closed`, or `archived`. Closing stops new Attempts; archiving preserves history.
+- **Relationships:** May be associated with a creator User and/or an organization according to `creatorType`; has many AssessmentVersions, invitations/access grants, and Attempts. AssessmentVersions reference Question Service's ChallengeVersions.
+- **Mutable data:** Access policy, lifecycle status, and current-version reference may change. Published assessment content lives only in AssessmentVersion.
+
+## AssessmentVersion
+
+- **Purpose:** Immutable assessment definition used to run and rank attempts.
+- **Owner:** Assessment Service.
+- **Important fields:** `assessmentVersionId`, `assessmentId`, version number, ordered `challengeVersionIds`, timing rules, attempt policy, scoring configuration, result-release configuration, publication metadata, and status.
+- **Lifecycle/status:** `draft`, `published`, `closed`, or `retired`. A published version accepts Attempts until closed according to its access and timing rules.
+- **Relationships:** Belongs to one Assessment; composes exact ChallengeVersions; has Attempts, Scores, and LeaderboardEntries. It receives Question/Challenge data through service contracts, not cross-schema reads.
+- **Immutable data:** Once published, composition, order, timing, access, scoring, and release rules are immutable. Changes require a new AssessmentVersion.
+
+## Attempt
+
+- **Purpose:** A candidate's bounded session for one AssessmentVersion.
+- **Owner:** Assessment Service.
+- **Important fields:** `attemptId`, `assessmentVersionId`, `candidateUserId`, start/end timestamps, deadline, status, and eligibility/result-release state.
+- **Lifecycle/status:** `created`, `in_progress`, `submitted`, `completed`, `expired`, or `cancelled`. `completed` denotes an attempt whose final evaluation outcomes have been applied and which can enter the version's percentile population.
+- **Relationships:** Belongs to one AssessmentVersion and candidate; has many Submissions; produces Scores and, when eligible, a LeaderboardEntry.
+- **Mutable data:** The active attempt state, timestamps, and submission collection change until finalization. Its assessment-version reference and historical outcome are immutable once completed.
+
+## Submission
+
+- **Purpose:** A candidate's code submission for a QuestionVersion during an Attempt.
+- **Owner:** Assessment Service.
+- **Important fields:** `submissionId`, `attemptId`, `challengeVersionId`, `questionVersionId`, selected language/runtime, source-code reference, sequence number, submitted timestamp, and evaluation state.
+- **Lifecycle/status:** `accepted`, `queued`, `evaluating`, `evaluated`, `failed`, or `superseded`. Acceptance is durable before asynchronous evaluation is requested.
+- **Relationships:** Belongs to one Attempt and identifies the exact versioned challenge/question it answers. It is correlated with one or more Evaluation records by identifier/event, not a cross-service database join.
+- **Mutable data:** Evaluation state and the pointer to the latest applied outcome may change. Submitted source, language, version IDs, and sequence number are immutable after acceptance.
+
+## Evaluation
+
+- **Purpose:** Records an asynchronous evaluation request and its sandbox execution outcome.
+- **Owner:** Evaluation Service.
+- **Important fields:** `evaluationId`, `submissionId`, `attemptId`, `assessmentVersionId`, `questionVersionId`, sandbox/runtime metadata, input/test outcome summary, resource usage, status, failure reason, and timestamps.
+- **Lifecycle/status:** `queued`, `running`, `succeeded`, `failed`, `timed_out`, or `cancelled`. Terminal outcomes are emitted to Assessment Service idempotently.
+- **Relationships:** Correlates to one Submission and exact version identifiers through events. It consumes protected test material under Question Service-approved contracts and must never expose it to candidates or application services.
+- **Mutable data:** Queue/execution status and in-progress diagnostics may change. A terminal outcome and execution evidence are immutable; a retry is a distinct Evaluation linked to the same Submission.
+
+## Score
+
+- **Purpose:** Authoritative scored result derived from applied Evaluation outcomes.
+- **Owner:** Assessment Service.
+- **Important fields:** `scoreId`, `attemptId`, `assessmentVersionId`, optional `challengeVersionId` and `questionVersionId`, scope (`question`, `challenge`, or `assessment`), earned and maximum points, calculation version, calculation timestamp, and finality state.
+- **Lifecycle/status:** `pending`, `provisional`, `final`, or `invalidated`. Scores become final when the Attempt is completed; a controlled regrade creates a new score calculation rather than altering historical versioned content.
+- **Relationships:** Belongs to one Attempt and AssessmentVersion; may summarize a QuestionVersion or ChallengeVersion; feeds the assessment-level LeaderboardEntry.
+- **Mutable data:** Pending/provisional scores may be replaced as evaluations arrive. A final score is immutable except for an explicit auditable regrade or invalidation process.
+
+## LeaderboardEntry
+
+- **Purpose:** The ranked, visible result of an eligible completed Attempt for one AssessmentVersion.
+- **Owner:** Assessment Service, within its ranking module.
+- **Important fields:** `leaderboardEntryId`, `assessmentVersionId`, `attemptId`, `candidateUserId`, final score, percentile, rank, tie-break values, visibility state, and calculated timestamp.
+- **Lifecycle/status:** `pending`, `ranked`, `released`, `hidden`, or `superseded`. Only completed Attempts of the same published AssessmentVersion are included in its ranking and percentile population.
+- **Relationships:** Belongs to one AssessmentVersion and represents one eligible Attempt; derives from the assessment-level Score. Identity data is displayed using an Identity Service reference or approved projection.
+- **Mutable data:** Rank, percentile, visibility, and calculated timestamp may be recalculated as completed attempts arrive. The referenced assessment version, attempt, and underlying final-score snapshot remain immutable for each calculation record; recalculation is auditable.
+
+## Primary relationship flow
+
+`User` creates and shares `Challenge` → `ChallengeVersion` selects immutable `QuestionVersion` records → `AssessmentVersion` selects immutable `ChallengeVersion` records → candidate `User` creates an `Attempt` → `Submission` is asynchronously processed as an `Evaluation` → Assessment Service applies `Score` records → the completed attempt contributes a version-scoped `LeaderboardEntry` and percentile.
