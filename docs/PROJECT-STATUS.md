@@ -1,125 +1,90 @@
 # MockArena Project Status
 
-## Current architecture
+Checkpoint date: 2026-09-12
 
-Services:
-- Question Service — implemented
-- Challenge Service — first slice implemented
-- Identity Service — not started
-- Assessment Service — not started
-- Evaluation Service — not started
+## Implemented services
 
-## Local ports
+- Question Service (`8080`): generic versioned assessment content.
+- Challenge Service (`8081`): generic question selection and immutable challenge manifests.
+- Identity Service (`8082`): local user identity and access-token issuance.
+- Assessment Service (`8083`): assessments, assessment versions, attempt start, and safe candidate-content delivery.
 
-- Question Service: 8080
-- Challenge Service: 8081
+PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container. Each service owns its own PostgreSQL schema; services communicate over versioned REST APIs and never read another service's tables.
 
-## Infrastructure
+## Database migrations
 
-- Java 21
-- Spring Boot
-- PostgreSQL 16 via Rancher Desktop/Docker
-- Maven Wrapper
-- Testcontainers 2.x
-- Kubernetes via Rancher Desktop
-- Redis/Kafka not introduced yet
+- Question Service: V4 `add_generic_assessment_content_metadata`
+- Challenge Service: V5 `add_question_type_to_challenge_version_manifest`
+- Identity Service: V1 `identity_schema`
+- Assessment Service: V3 `add_attempt_start_slice`
+
+All schema evolution uses Flyway. Published QuestionVersions, ChallengeVersions, and AssessmentVersions/manifests are protected as immutable historical records.
+
+## Authentication
+
+Identity Service uses Argon2id password hashing and issues 15-minute RS256 JWT access tokens. The token contains the user UUID in `sub`, roles, issuer, audience, issued/expiry timestamps, and a token ID.
+
+Question, Challenge, and Assessment services validate the Identity public key locally (signature, issuer, audience, and expiry). User-owned writes derive their actor/creator identity only from JWT `sub`; client-supplied owner or creator IDs are not trusted. Internal service APIs remain a separate service-to-service boundary and do not forward browser JWTs.
 
 ## Question Service
 
-Implemented:
-- Question
-- QuestionVersion
-- draft/published lifecycle
-- immutable published versions
-- Flyway migrations
-- V1 original schema
-- V2 catalog metadata
-- V3 question types (`MCQ` and `CODING`)
-- tags
-- difficulty
-- supported languages
-- internal QuestionVersion catalog API
-- development seed data
-- PostgreSQL/Testcontainers tests
-
-Catalog endpoint:
-POST /internal/v1/question-versions/resolve
-
-Development seed:
-14 DSA questions: 12 CODING and 2 MCQ.
+- Versioned generic assessment content with `MCQ` and `CODING` type handlers.
+- Generic taxonomy assignments, content locale, difficulty profiles, programming languages, and scoring-policy envelopes.
+- Safe catalog APIs: legacy V1 compatibility and generic V2 resolution.
+- Candidate-content V3 API returns exact requested historical `PUBLISHED` or `RETIRED` QuestionVersions while omitting MCQ correct answers/explanations and coding hidden tests, scoring rules, and execution limits.
+- Development seed data includes DSA coding and MCQ content.
 
 ## Challenge Service
 
-Implemented:
-- Challenge
-- ChallengeVersion
-- rule-based question selection
-- deterministic selection
-- Question Service REST client
-- PostgreSQL persistence
-- composition stores only Question/QuestionVersion IDs
-- insufficient selection -> 422
+- Generic rule-based selection using taxonomy, question type, difficulty profile, locale, and programming language metadata.
+- Deterministic selection, logical-question de-duplication, and ID-only composition.
+- Draft publication resolves Question Service metadata into an exact, ordered, immutable published QuestionVersion manifest.
+- Published ChallengeVersions can retire without rewriting their historical manifest; retiring the current version clears the current-published pointer but does not archive the Challenge.
+- Internal V1 resolution validates composability, and internal V2 manifest resolution returns only ordered Question/QuestionVersion IDs and type codes.
 
-Endpoint:
-POST /api/v1/challenges
+## Assessment Service
 
-Local port:
-8081
+- Assessment and AssessmentVersion authoring, revision, publication, retirement, and closing lifecycle.
+- Published AssessmentVersions reference only immutable published ChallengeVersions through local ordered ID manifests; no Challenge or Question content is copied into Assessment data.
+- Timing supports optional UTC availability windows and optional attempt durations. The future attempt deadline rule is `min(startedAt + duration, availableUntil)` when both exist.
+- Policy envelopes support V1 `UNTIMED`/`FIXED_DURATION`, `MAX_ATTEMPTS`, and `IMMEDIATE`/`MANUAL`/`SCHEDULED` result release policies.
 
-Question Service dependency:
-http://localhost:8080
+### Attempt Slice 1
 
-## Verified end-to-end
+- Authenticated candidates can start an `IN_PROGRESS` Attempt against a published AssessmentVersion with a required idempotency key.
+- AttemptItems freeze the complete ordered ID-only route: assessment/challenge/question version references, positions, and question type codes.
+- Start enforces availability, max-attempt policy, deadline calculation, active-attempt uniqueness, idempotency, and atomic expiration checks.
+- The development-only `AttemptStartEntitlementPort` adapter grants each new user three complimentary `assessment.attempt.start` reservations. A resume does not consume another start; reservation reconciliation is durable for recovery after local persistence.
 
-Successfully created:
+### Candidate-content delivery
 
-"My Tree Challenge"
+- An Attempt owner can retrieve content only while their Attempt is `IN_PROGRESS` and before its deadline.
+- Assessment Service rebuilds the ordered route from Challenge Service's internal manifest API and requests safe exact-version content from Question Service.
+- Assessment Service persists no Question content. Browser responses never include correct MCQ answers/explanations, hidden tests, scoring internals, or execution limits.
 
-criteria:
-- trees
-- MEDIUM
-- JAVA
-- 1 question
+## Local backup workflow
 
-Challenge Service dynamically called Question Service and selected:
+Use `D:\MockArena\scripts\Backup-MockArenaPostgres.ps1` to create a custom-format logical `pg_dump` in `D:\MockArena\backups`. It checks Docker/container/PostgreSQL readiness, verifies the dump with `pg_restore --list`, and writes a SHA-256 sidecar. Restore is deliberately explicit through `Restore-MockArenaPostgres.ps1 -ConfirmRestore` and requires interactive confirmation.
 
-Binary Tree Level Order Traversal
+`/backups/` is excluded from Git. Docker volumes are not recreated by either script.
 
-The ChallengeVersion was created as DRAFT.
+## Final verification on 2026-09-12
 
-## Important architecture rules
+- Question Service: `22` tests passed, `0` failures, `0` errors.
+- Challenge Service: `15` tests passed, `0` failures, `0` errors.
+- Identity Service: `3` tests passed, `0` failures, `0` errors.
+- Assessment Service: `14` tests passed, `0` failures, `0` errors.
+- `git diff --check`: passed.
+- Logical backup: `mockarena_20260912_233414.dump`, SHA-256 verified and `pg_restore --list` verified by the backup script.
 
-- Services never access another service's database.
-- Question Service owns Question/QuestionVersion.
-- Challenge Service owns Challenge/ChallengeVersion.
-- Published versions are immutable.
-- Challenge Service stores QuestionVersion IDs, not copied question content.
-- PostgreSQL is source of truth.
-- Redis will be added only when required.
-- Kafka will be added when asynchronous workflows require it.
-- AI generation/skill diagnosis comes later.
+## Intentionally deferred
 
-## Current next step
+- Candidate response autosave and durable response models.
+- Attempt submission, evaluation/code execution, scoring, percentile, leaderboard, and result release execution.
+- Next.js UI and Monaco editor.
+- Identity refresh tokens, logout, MFA, social login, and organization support.
+- Redis, Kafka, payments, billing, production entitlement service, AI skill diagnosis, and frontend work.
 
-Do NOT implement another feature immediately.
+## Next development milestone
 
-First understand Challenge Service code by tracing:
-
-POST /api/v1/challenges
-
-through:
-
-ChallengeController
--> ChallengeApplicationService
--> RestQuestionCatalogClient
--> Question Service
--> DeterministicQuestionSelector
--> repositories
--> PostgreSQL
-
-After understanding that flow:
-
-Implement ChallengeVersion publication so a draft dynamic selection becomes a frozen immutable manifest.
-
-Then proceed toward:
-Assessment -> Attempt -> Submission -> Evaluation -> Score -> Percentile -> Leaderboard.
+Implement candidate response autosave, followed by the first Next.js candidate UI, Monaco coding editor, submit flow, and Evaluation Service.

@@ -1,1 +1,12 @@
 /backups/
+/**/target/
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
