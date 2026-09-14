@@ -1,16 +1,12 @@
 package com.mockarena.assessment.infrastructure.challenge;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.*;
 import java.util.*;
 
-@Component
 public class RestChallengeVersionCatalogClient implements ChallengeVersionCatalogClient {
     private final RestClient client;
-    public RestChallengeVersionCatalogClient(@Value("${challenge-service.base-url}") String baseUrl) { this(RestClient.builder().baseUrl(baseUrl).build()); }
-    RestChallengeVersionCatalogClient(RestClient client) { this.client = client; }
+    public RestChallengeVersionCatalogClient(RestClient client) { this.client = client; }
     @Override public List<ChallengeVersionReference> resolve(List<UUID> challengeVersionIds) {
         try {
             ResolveResponse response = client.post().uri("/internal/v1/challenge-versions/resolve").body(new ResolveRequest(challengeVersionIds)).retrieve().body(ResolveResponse.class);

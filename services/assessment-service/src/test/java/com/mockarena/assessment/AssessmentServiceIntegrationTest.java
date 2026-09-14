@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.persistence.EntityManager;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -34,10 +35,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AssessmentServiceIntegrationTest {
     @Container static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
     @DynamicPropertySource static void database(DynamicPropertyRegistry registry) { registry.add("spring.datasource.url", postgres::getJdbcUrl); registry.add("spring.datasource.username", postgres::getUsername); registry.add("spring.datasource.password", postgres::getPassword); }
-    @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired ObjectMapper json;
+    @Autowired MockMvc mvc; @Autowired JdbcTemplate jdbc; @Autowired ObjectMapper json; @Autowired EntityManager entityManager;
     @MockitoBean ChallengeVersionCatalogClient challenges;
     @MockitoBean AttemptStartEntitlementPort entitlements;
     @MockitoBean QuestionCandidateContentClient questionContent;
+
+    @BeforeEach void defaultCatalogueManifestResolution() {
+        when(challenges.resolveManifests(any())).thenAnswer(invocation -> { List<UUID> ids = invocation.getArgument(0); return ids == null ? List.of() : ids.stream().map(id -> new ChallengeVersionManifest(UUID.randomUUID(), id, 1, List.of(new ChallengeQuestionReference(1, UUID.randomUUID(), UUID.randomUUID(), "MCQ")))).toList(); });
+    }
 
     @Test void createsDraftAssessmentWithExactOrderedMixedChallengeManifest() throws Exception {
         ChallengeVersionReference mcq = reference(), coding = reference(), mixed = reference(); when(challenges.resolve(any())).thenReturn(List.of(mcq, coding, mixed));
@@ -62,7 +67,7 @@ class AssessmentServiceIntegrationTest {
         mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())).replace("\"attemptDurationSeconds\":3600", "\"attemptDurationSeconds\":0"))).andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())).replace("\"maxAttempts\":1", "\"maxAttempts\":0"))).andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())).replace("\"policyCode\":\"MANUAL\",\"parameters\":{}", "\"policyCode\":\"SCHEDULED\",\"parameters\":{}"))).andExpect(status().isBadRequest());
-        mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())).replace("2026-09-13T00:00:00Z", "2026-09-11T00:00:00Z"))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())).replaceFirst("\\\"availableUntil\\\":\\\"[^\\\"]+\\\"", "\\\"availableUntil\\\":\\\"2000-09-11T00:00:00Z\\\""))).andExpect(status().isBadRequest());
     }
 
     @Test void establishesAvailabilityStartAndEffectiveDeadlineSemantics() {
@@ -81,6 +86,7 @@ class AssessmentServiceIntegrationTest {
         String assessmentId = created.get("assessmentId").asText();
         mvc.perform(post("/api/v1/assessments/{id}/versions/1/publish", assessmentId).contentType("application/json").content("{\"expectedAssessmentVersion\":0,\"expectedVersion\":0}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        assertThat(jdbc.queryForObject("select count(*) from assessment.public_assessment_catalogue where assessment_id = ?", Integer.class, UUID.fromString(assessmentId))).isEqualTo(1);
         mvc.perform(post("/api/v1/assessments/{id}/versions", assessmentId).contentType("application/json").content("{\"expectedAssessmentVersion\":1,\"content\":" + content(List.of(second.challengeVersionId())) + "}"))
             .andExpect(status().isCreated()).andExpect(jsonPath("$.versionNumber").value(2)).andExpect(jsonPath("$.status").value("DRAFT"));
         mvc.perform(post("/api/v1/assessments/{id}/close", assessmentId).contentType("application/json").content("{\"expectedAssessmentVersion\":2}"))
@@ -159,6 +165,81 @@ class AssessmentServiceIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_schema='assessment' and table_name='attempt_items' and column_name='stem'",Integer.class)).isZero();
     }
 
+    @Test void autosavesMixedResponsesInRouteOrderWithReplayAndStaleWriteProtection() throws Exception {
+        String attempt = startMixedAttempt();
+        UUID mcqMutation = UUID.randomUUID();
+        String mcq = response("MCQ", "B", null, null, 0, mcqMutation);
+        String saved = mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "mcq-save").contentType("application/json").content(mcq))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.responseTypeCode").value("MCQ")).andExpect(jsonPath("$.selectedOptionId").value("B"))
+            .andReturn().getResponse().getContentAsString();
+        long firstVersion = json.readTree(saved).get("version").asLong();
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "mcq-save").contentType("application/json").content(mcq))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(firstVersion));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "mcq-update").contentType("application/json").content(response("MCQ", "C", null, null, firstVersion, UUID.randomUUID())))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(firstVersion + 1));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "mcq-save").contentType("application/json").content(mcq))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.selectedOptionId").value("B")).andExpect(jsonPath("$.version").value(firstVersion));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "other-key").contentType("application/json").content(response("MCQ", "A", null, null, firstVersion, UUID.randomUUID())))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("RESPONSE_VERSION_CONFLICT"));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/2", attempt).header("Idempotency-Key", "code-save").contentType("application/json").content(response("CODING", null, "JAVA", "class Solution { }", 0, UUID.randomUUID())))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.programmingLanguage").value("JAVA")).andExpect(jsonPath("$.sourceCode").value("class Solution { }"));
+        mvc.perform(get("/api/v1/attempts/{id}/responses", attempt)).andExpect(status().isOk()).andExpect(jsonPath("$[0].globalPosition").value(1)).andExpect(jsonPath("$[0].selectedOptionId").value("C"))
+            .andExpect(jsonPath("$[1].globalPosition").value(2)).andExpect(jsonPath("$[1].sourceCode").value("class Solution { }"))
+            .andExpect(jsonPath("$[0].correctOptionId").doesNotExist()).andExpect(jsonPath("$[1].hiddenTests").doesNotExist()).andExpect(jsonPath("$[1].scoringRules").doesNotExist());
+        assertThat(jdbc.queryForObject("select count(*) from assessment.attempt_item_responses where attempt_id = ?", Integer.class, UUID.fromString(attempt))).isEqualTo(2);
+    }
+
+    @Test void autosaveRejectsInvalidPayloadsPositionsIdempotencyReuseAndInactiveAttempts() throws Exception {
+        String attempt = startMixedAttempt();
+        mvc.perform(put("/api/v1/attempts/{id}/responses/3", attempt).header("Idempotency-Key", "position").contentType("application/json").content(response("MCQ", "A", null, null, 0, UUID.randomUUID())))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "wrong-type").contentType("application/json").content(response("CODING", null, "JAVA", "x", 0, UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "missing-option").contentType("application/json").content(response("MCQ", null, null, null, 0, UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/v1/attempts/{id}/responses/2", attempt).header("Idempotency-Key", "missing-language").contentType("application/json").content(response("CODING", null, null, "x", 0, UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/v1/attempts/{id}/responses/2", attempt).header("Idempotency-Key", "missing-source").contentType("application/json").content(response("CODING", null, "JAVA", null, 0, UUID.randomUUID())))
+            .andExpect(status().isBadRequest());
+        UUID mutation = UUID.randomUUID();
+        String first = response("MCQ", "A", null, null, 0, mutation);
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "reused").contentType("application/json").content(first)).andExpect(status().isOk());
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "reused").contentType("application/json").content(response("MCQ", "B", null, null, 0, UUID.randomUUID())))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "same-mutation-other-key").contentType("application/json").content(first)).andExpect(status().isOk());
+        jdbc.update("update assessment.attempts set status='SUBMITTED' where id=?", UUID.fromString(attempt)); entityManager.clear();
+        mvc.perform(put("/api/v1/attempts/{id}/responses/1", attempt).header("Idempotency-Key", "submitted").contentType("application/json").content(response("MCQ", "A", null, null, 0, UUID.randomUUID())))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("INVALID_STATE"));
+    }
+
+    @Test void autosaveExpiresDueAttemptAndDoesNotExposeSourceInErrors() throws Exception {
+        String attempt = startMixedAttempt();
+        jdbc.update("update assessment.attempts set deadline_at = now() - interval '1 second' where id=?", UUID.fromString(attempt)); entityManager.clear();
+        mvc.perform(put("/api/v1/attempts/{id}/responses/2", attempt).header("Idempotency-Key", "expired").contentType("application/json").content(response("CODING", null, "JAVA", "private candidate source", 0, UUID.randomUUID())))
+            .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("INVALID_STATE"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("private candidate source"))));
+        assertThat(jdbc.queryForObject("select status from assessment.attempts where id=?", String.class, UUID.fromString(attempt))).isEqualTo("EXPIRED");
+    }
+
+    private String startMixedAttempt() throws Exception {
+        ChallengeVersionReference reference = reference(); UUID firstQuestion = UUID.randomUUID(), firstVersion = UUID.randomUUID(), secondQuestion = UUID.randomUUID(), secondVersion = UUID.randomUUID();
+        when(challenges.resolve(any())).thenReturn(List.of(reference), List.of(reference));
+        when(challenges.resolveManifests(any())).thenReturn(List.of(new ChallengeVersionManifest(reference.challengeId(), reference.challengeVersionId(), reference.challengeVersionNumber(), List.of(
+            new ChallengeQuestionReference(1, firstQuestion, firstVersion, "MCQ"), new ChallengeQuestionReference(2, secondQuestion, secondVersion, "CODING")))));
+        when(entitlements.reserve(any(), any(), any())).thenReturn(UUID.randomUUID());
+        String assessment = publish(reference);
+        String started = mvc.perform(post("/api/v1/assessments/{id}/versions/1/attempts", assessment).header("Idempotency-Key", "start-" + UUID.randomUUID()))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return json.readTree(started).get("attemptId").asText();
+    }
+
+    private static String response(String type, String selectedOptionId, String programmingLanguage, String sourceCode, long expectedVersion, UUID mutationId) {
+        String selected = selectedOptionId == null ? "null" : "\"" + selectedOptionId + "\"";
+        String language = programmingLanguage == null ? "null" : "\"" + programmingLanguage + "\"";
+        String source = sourceCode == null ? "null" : "\"" + sourceCode + "\"";
+        return "{\"responseTypeCode\":\"" + type + "\",\"selectedOptionId\":" + selected + ",\"programmingLanguage\":" + language + ",\"sourceCode\":" + source + ",\"expectedResponseVersion\":" + expectedVersion + ",\"clientMutationId\":\"" + mutationId + "\"}";
+    }
+
     private String publish(ChallengeVersionReference reference) throws Exception {
         var created = json.readTree(mvc.perform(post("/api/v1/assessments").contentType("application/json").content(request(List.of(reference.challengeVersionId())))).andReturn().getResponse().getContentAsString());
         String assessmentId = created.get("assessmentId").asText();
@@ -169,5 +250,5 @@ class AssessmentServiceIntegrationTest {
     private void assertThatThrownByDatabaseUpdate(String assessmentId) { org.assertj.core.api.Assertions.assertThatThrownBy(() -> jdbc.update("update assessment.assessment_versions set title = 'changed' where assessment_id = ? and version_number = 1", UUID.fromString(assessmentId))).hasMessageContaining("published assessment versions are immutable"); }
     private static ChallengeVersionReference reference() { return new ChallengeVersionReference(UUID.randomUUID(), UUID.randomUUID(), 1, "PUBLISHED"); }
     private static String request(List<UUID> ids) { return "{\"visibility\":\"PRIVATE\",\"content\":" + content(ids) + "}"; }
-    private static String content(List<UUID> ids) { return "{\"title\":\"Mixed assessment\",\"description\":\"safe metadata only\",\"instructions\":\"Complete all challenges\",\"assessmentTypeCode\":\"STANDARD\",\"timingPolicy\":{\"policyCode\":\"FIXED_DURATION\",\"parameters\":{}},\"availableFrom\":\"2026-09-12T00:00:00Z\",\"availableUntil\":\"2026-09-13T00:00:00Z\",\"attemptDurationSeconds\":3600,\"attemptPolicy\":{\"policyCode\":\"MAX_ATTEMPTS\",\"parameters\":{\"maxAttempts\":1}},\"resultReleasePolicy\":{\"policyCode\":\"MANUAL\",\"parameters\":{}},\"challengeVersionIds\":[" + ids.stream().map(id -> "\"" + id + "\"").collect(java.util.stream.Collectors.joining(",")) + "]}"; }
+    private static String content(List<UUID> ids) { java.time.Instant now = java.time.Instant.now(); return "{\"title\":\"Mixed assessment\",\"description\":\"safe metadata only\",\"instructions\":\"Complete all challenges\",\"assessmentTypeCode\":\"STANDARD\",\"timingPolicy\":{\"policyCode\":\"FIXED_DURATION\",\"parameters\":{}},\"availableFrom\":\"" + now.minusSeconds(3600) + "\",\"availableUntil\":\"" + now.plusSeconds(86400) + "\",\"attemptDurationSeconds\":3600,\"attemptPolicy\":{\"policyCode\":\"MAX_ATTEMPTS\",\"parameters\":{\"maxAttempts\":1}},\"resultReleasePolicy\":{\"policyCode\":\"MANUAL\",\"parameters\":{}},\"challengeVersionIds\":[" + ids.stream().map(id -> "\"" + id + "\"").collect(java.util.stream.Collectors.joining(",")) + "]}"; }
 }

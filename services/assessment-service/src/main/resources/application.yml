@@ -19,6 +19,9 @@ challenge-service:
 question-service:
   base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8080}
 assessment:
+  catalogue:
+    backfill:
+      enabled: ${ASSESSMENT_CATALOGUE_BACKFILL_ENABLED:false}
   entitlements:
     development-enabled: ${ASSESSMENT_DEVELOPMENT_ENTITLEMENTS_ENABLED:true}
   security:

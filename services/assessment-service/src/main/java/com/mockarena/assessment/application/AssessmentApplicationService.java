@@ -11,8 +11,8 @@ import java.util.*;
 
 @Service
 public class AssessmentApplicationService {
-    private final AssessmentRepository assessments; private final AssessmentVersionRepository versions; private final AssessmentVersionChallengeRepository manifests; private final ChallengeVersionCatalogClient challenges; private final Clock clock = Clock.systemUTC();
-    public AssessmentApplicationService(AssessmentRepository assessments, AssessmentVersionRepository versions, AssessmentVersionChallengeRepository manifests, ChallengeVersionCatalogClient challenges) { this.assessments = assessments; this.versions = versions; this.manifests = manifests; this.challenges = challenges; }
+    private final AssessmentRepository assessments; private final AssessmentVersionRepository versions; private final AssessmentVersionChallengeRepository manifests; private final ChallengeVersionCatalogClient challenges; private final PublicAssessmentCatalogueProjectionService catalogueProjections; private final Clock clock = Clock.systemUTC();
+    public AssessmentApplicationService(AssessmentRepository assessments, AssessmentVersionRepository versions, AssessmentVersionChallengeRepository manifests, ChallengeVersionCatalogClient challenges, PublicAssessmentCatalogueProjectionService catalogueProjections) { this.assessments = assessments; this.versions = versions; this.manifests = manifests; this.challenges = challenges; this.catalogueProjections = catalogueProjections; }
     @Transactional
     public AssessmentVersionResponse create(CreateAssessmentRequest request, UUID createdByUserId) {
         List<ChallengeVersionReference> references = resolve(request.content().challengeVersionIds()); Instant now = clock.instant();
@@ -41,7 +41,7 @@ public class AssessmentApplicationService {
         if (version.status() != AssessmentVersionStatus.DRAFT) throw new IllegalStateException("Only draft assessment versions can be published");
         List<ChallengeVersionReference> references = resolve(manifests.findByAssessmentVersionIdOrderByPositionAsc(version.id()).stream().map(AssessmentVersionChallenge::challengeVersionId).toList());
         assertVersion(assessment.version(), request.expectedAssessmentVersion()); assertVersion(version.version(), request.expectedVersion()); if (version.status() != AssessmentVersionStatus.DRAFT) throw new IllegalStateException("Only draft assessment versions can be published");
-        replaceManifest(version.id(), references); Instant now = clock.instant(); version.publish(now); assessment.publish(version.id(), now); versions.saveAndFlush(version); assessments.saveAndFlush(assessment); return response(version);
+        replaceManifest(version.id(), references); Instant now = clock.instant(); catalogueProjections.create(version, manifests.findByAssessmentVersionIdOrderByPositionAsc(version.id()), now); version.publish(now); assessment.publish(version.id(), now); versions.saveAndFlush(version); assessments.saveAndFlush(assessment); return response(version);
     }
     @Transactional
     public AssessmentVersionResponse retire(UUID assessmentId, int versionNumber, RetireAssessmentVersionRequest request) {

@@ -71,6 +71,10 @@ Challenge Service may expose the published manifest internally as ordered routin
 - **Relationships:** Belongs to one Assessment; composes exact ChallengeVersions; has Attempts, Scores, and LeaderboardEntries. It receives Question/Challenge data through service contracts, not cross-schema reads.
 - **Immutable data:** Once published, composition, order, timing, access, scoring, and release rules are immutable. Changes require a new AssessmentVersion.
 
+### Public catalogue projection
+
+Assessment Service derives an Assessment-owned safe public projection when an AssessmentVersion is published. It contains title/description, a bounded instructions summary, generic assessment type, timing/availability and policy summaries, plus aggregate Question counts by generic question-type code. It contains no Challenge, Question, version, manifest, protected-content, creator, candidate, or scoring identifiers/data. Public discovery only returns the Assessment's current `PUBLIC` and `PUBLISHED` version.
+
 ## Attempt
 
 - **Purpose:** A candidate's bounded session for one AssessmentVersion.
@@ -79,6 +83,10 @@ Challenge Service may expose the published manifest internally as ordered routin
 - **Lifecycle/status:** `created`, `in_progress`, `submitted`, `completed`, `expired`, or `cancelled`. `completed` denotes an attempt whose final evaluation outcomes have been applied and which can enter the version's percentile population.
 - **Relationships:** Belongs to one AssessmentVersion and candidate; has many Submissions; produces Scores and, when eligible, a LeaderboardEntry.
 - **Mutable data:** The active attempt state, timestamps, and submission collection change until finalization. Its assessment-version reference and historical outcome are immutable once completed.
+
+### Candidate response autosave
+
+Assessment Service persists an Attempt response against the immutable `(attemptId, globalPosition)` AttemptItem route. An MCQ response contains only the candidate-selected option ID. A coding response contains only the candidate-selected programming language and source code. The response has an optimistic-lock version and is written with an idempotency key/client mutation record. Only the Attempt owner may read or save it while the Attempt is `IN_PROGRESS`; a due Attempt transitions to `EXPIRED` before either operation completes. Responses contain no correctness or grading data and do not copy Question content, hidden tests, or protected answer material.
 
 ## Submission
 

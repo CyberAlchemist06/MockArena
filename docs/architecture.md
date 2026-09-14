@@ -43,6 +43,10 @@ Challenge Service publishes a draft by resolving that rule into an immutable ord
 
 Assessment Service composes only ordered ChallengeVersion identifiers. It validates their published/composable state through Challenge Service's internal resolver and freezes that manifest with timing, attempt, and result-release policy snapshots when an AssessmentVersion is published. It neither accesses Challenge tables nor copies Challenge or Question content.
 
+Assessment Service also owns anonymous public Assessment catalogue reads. It stores a safe local publication-time projection containing only public Assessment metadata, policy summaries, availability, and aggregate Question type counts. Public reads query PostgreSQL directly and require a `PUBLIC`/`PUBLISHED` Assessment, a current-published pointer, and a `PUBLISHED` AssessmentVersion. The public API never calls Challenge or Question Service, exposes manifests, or forwards browser identity.
+
 For future Attempt routing, Challenge Service additionally exposes a protected V2 manifest contract for published, complete ChallengeVersions. It returns only the persisted position plus Question/QuestionVersion IDs and Question type code. Assessment Service consumes this service-to-service projection; it never reads Challenge or Question tables and the contract never contains Question content or protected data.
 
 Attempt start persists an Assessment-owned, ID-only route built from that manifest. It uses a replaceable entitlement reservation boundary and durable reconciliation record; no payment or entitlement-provider logic is embedded in Assessment content or Attempt domain logic.
+
+Candidate response autosave is also Assessment-owned. It validates an authenticated candidate against the frozen AttemptItem route and persists only the candidate's MCQ selection or coding language/source code in PostgreSQL. It does not call Question or Challenge Service, does not persist Question content or protected evaluation data, and is versioned/idempotent for concurrent browser requests. Redis is intentionally not used; PostgreSQL remains authoritative.
