@@ -1,2 +1,4 @@
-package com.mockarena.assessment.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
-public interface CodingEvaluationOutboxRepository extends JpaRepository<CodingEvaluationOutbox,UUID>{ List<CodingEvaluationOutbox> findByAttemptIdOrderByGlobalPositionAsc(UUID attemptId); boolean existsByAttemptIdAndGlobalPositionAndEventType(UUID attemptId,int globalPosition,String eventType); }
+package com.mockarena.assessment.domain; import org.springframework.data.jpa.repository.*; import org.springframework.data.repository.query.Param; import java.time.*; import java.util.*;
+public interface CodingEvaluationOutboxRepository extends JpaRepository<CodingEvaluationOutbox,UUID>{ List<CodingEvaluationOutbox> findByAttemptIdOrderByGlobalPositionAsc(UUID attemptId); boolean existsByAttemptIdAndGlobalPositionAndEventType(UUID attemptId,int globalPosition,String eventType);
+ @Query(value="select * from assessment.coding_evaluation_outbox where (delivery_status='PENDING' and next_attempt_at <= :now) or (delivery_status='IN_FLIGHT' and lease_until < :now) order by created_at for update skip locked limit :limit",nativeQuery=true) List<CodingEvaluationOutbox> claimable(@Param("now") Instant now,@Param("limit") int limit);
+}

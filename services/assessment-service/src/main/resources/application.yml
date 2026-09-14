@@ -18,6 +18,9 @@ challenge-service:
   base-url: ${CHALLENGE_SERVICE_BASE_URL:http://localhost:8081}
 question-service:
   base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8080}
+evaluation-service:
+  base-url: ${EVALUATION_SERVICE_BASE_URL:http://localhost:8084}
+  workload-token: ${EVALUATION_SERVICE_WORKLOAD_TOKEN:}
 assessment:
   catalogue:
     backfill:
@@ -30,6 +33,12 @@ assessment:
       issuer: ${MOCKARENA_JWT_ISSUER:mockarena-identity}
       audience: ${MOCKARENA_JWT_AUDIENCE:mockarena-api}
       public-key-path: ${MOCKARENA_JWT_PUBLIC_KEY_PATH:}
+  workload-auth:
+    snapshot:
+      token: ${ASSESSMENT_SNAPSHOT_WORKLOAD_TOKEN:}
+  coding-evaluation-relay:
+    enabled: ${ASSESSMENT_CODING_EVALUATION_RELAY_ENABLED:false}
+    fixed-delay-ms: ${ASSESSMENT_CODING_EVALUATION_RELAY_DELAY_MS:5000}
 management:
   endpoints:
     web:

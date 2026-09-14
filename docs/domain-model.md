@@ -145,3 +145,4 @@ Publishing replaces the draft preview with a complete, deterministic manifest an
 ## V1 MCQ result slice
 
 `AttemptItem.questionVersionId` is the historical correctness key. Question Service exposes protected MCQ evaluation data only through an internal purpose-specific projection for exact published or retired versions. Assessment Service stores `AttemptResult` and `AttemptItemResult` derived facts. MCQ-only attempts can become `EVALUATED`; mixed MCQ/CODING attempts remain `PARTIALLY_EVALUATED` with coding items `PENDING` and no final aggregate score. Candidate result reads are owner-scoped, do not trigger evaluation, and are released according to the immutable AssessmentVersion policy.
+`evaluation.coding_evaluation_jobs` is an Evaluation-owned durable projection keyed by frozen Attempt item identity and source fingerprint. It has no cross-service database foreign key.

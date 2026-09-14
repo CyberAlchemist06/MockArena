@@ -1,0 +1,32 @@
+package com.mockarena.evaluation;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.mockarena.evaluation.application.CodingEvaluationJobService;
+import com.mockarena.evaluation.domain.*;
+import com.mockarena.evaluation.infrastructure.*;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.DynamicPropertyRegistry; import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer; import org.testcontainers.junit.jupiter.*;
+import java.nio.charset.StandardCharsets; import java.security.*; import java.time.*; import java.util.*;
+import static org.assertj.core.api.Assertions.assertThat; import static org.mockito.Mockito.*;
+
+@SpringBootTest(properties={"evaluation.security.enabled=false","evaluation.preparation.enabled=false"}) @Testcontainers
+class CodingEvaluationJobIntegrationTest {
+ @Container static final PostgreSQLContainer<?> postgres=new PostgreSQLContainer<>("postgres:16-alpine");
+ @DynamicPropertySource static void db(DynamicPropertyRegistry r){r.add("spring.datasource.url",postgres::getJdbcUrl);r.add("spring.datasource.username",postgres::getUsername);r.add("spring.datasource.password",postgres::getPassword);}
+ @Autowired CodingEvaluationJobService service; @Autowired CodingEvaluationJobRepository jobs; @MockitoBean AssessmentSnapshotClient snapshots; @MockitoBean QuestionCodingSpecClient specs;
+ @BeforeEach void reset(){jobs.deleteAll();}
+ @Test void duplicateDeliveryReusesOneDurableBusinessJob(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();String fingerprint=fingerprint("class Main{}");CodingEvaluationJob first=service.accept(attempt,1,question,version,fingerprint,"JAVA");CodingEvaluationJob replay=service.accept(attempt,1,question,version,fingerprint,"JAVA");assertThat(replay.jobId()).isEqualTo(first.jobId());assertThat(jobs.findByAttemptIdAndGlobalPositionAndQuestionVersionIdAndSubmittedResponseFingerprint(attempt,1,version,fingerprint).orElseThrow().jobId()).isEqualTo(first.jobId());}
+ @Test void answeredJavaPreparationVerifiesSnapshotAndStopsReadyForRunner(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();String source="class Main {}",fingerprint=fingerprint(source);CodingEvaluationJob job=service.accept(attempt,2,question,version,fingerprint,"JAVA");when(snapshots.get(attempt,2)).thenReturn(new AssessmentSnapshotClient.Snapshot(attempt,2,question,version,"JAVA",source,1L,fingerprint,false,Instant.now()));when(specs.resolve(version)).thenReturn(spec(version));service.prepare(job.jobId());assertThat(jobs.findById(job.jobId()).orElseThrow().status()).isEqualTo(CodingEvaluationJobStatus.READY_FOR_RUNNER);}
+ @Test void unansweredSnapshotSkipsSpecAndBecomesReadyForResultApplication(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();CodingEvaluationJob job=service.accept(attempt,3,question,version,null,null);when(snapshots.get(attempt,3)).thenReturn(new AssessmentSnapshotClient.Snapshot(attempt,3,question,version,null,null,null,null,true,Instant.now()));service.prepare(job.jobId());assertThat(jobs.findById(job.jobId()).orElseThrow().status()).isEqualTo(CodingEvaluationJobStatus.READY_FOR_RESULT_APPLICATION);verifyNoInteractions(specs);}
+ @Test void transientSnapshotFailureSchedulesBoundedRetry(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();CodingEvaluationJob job=service.accept(attempt,4,question,version,fingerprint("x"),"JAVA");when(snapshots.get(attempt,4)).thenThrow(new RemoteDependencyException("ASSESSMENT_SNAPSHOT_UNAVAILABLE",null));service.prepare(job.jobId());CodingEvaluationJob stored=jobs.findById(job.jobId()).orElseThrow();assertThat(stored.status()).isEqualTo(CodingEvaluationJobStatus.RETRY_WAIT);assertThat(stored.retryCount()).isEqualTo(1);}
+ @Test void duplicateUnansweredDeliveryUsesTheExplicitNullFingerprintBusinessIdentity(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();CodingEvaluationJob first=service.accept(attempt,5,question,version,null,null);CodingEvaluationJob replay=service.accept(attempt,5,question,version,null,null);assertThat(replay.jobId()).isEqualTo(first.jobId());}
+ @Test void claimLeasesDistinctJobsForSeparateWorkers(){CodingEvaluationJob first=service.accept(UUID.randomUUID(),6,UUID.randomUUID(),UUID.randomUUID(),fingerprint("one"),"JAVA");CodingEvaluationJob second=service.accept(UUID.randomUUID(),7,UUID.randomUUID(),UUID.randomUUID(),fingerprint("two"),"JAVA");List<CodingEvaluationJob> claimedOne=service.claim(1);List<CodingEvaluationJob> claimedTwo=service.claim(1);assertThat(claimedOne).extracting(CodingEvaluationJob::jobId).doesNotContainAnyElementsOf(claimedTwo.stream().map(CodingEvaluationJob::jobId).toList());assertThat(List.of(first.jobId(),second.jobId())).containsAll(claimedOne.stream().map(CodingEvaluationJob::jobId).toList());}
+ @Test void fingerprintMismatchIsInfrastructureFailureNotCandidateResult(){UUID attempt=UUID.randomUUID(),question=UUID.randomUUID(),version=UUID.randomUUID();CodingEvaluationJob job=service.accept(attempt,8,question,version,fingerprint("expected"),"JAVA");when(snapshots.get(attempt,8)).thenReturn(new AssessmentSnapshotClient.Snapshot(attempt,8,question,version,"JAVA","different",1L,fingerprint("different"),false,Instant.now()));service.prepare(job.jobId());assertThat(jobs.findById(job.jobId()).orElseThrow().status()).isEqualTo(CodingEvaluationJobStatus.FAILED_INFRASTRUCTURE);}
+ private static QuestionCodingSpecClient.Spec spec(UUID version){var f=JsonNodeFactory.instance;var tests=f.objectNode();tests.set("hiddenTests",f.arrayNode().add(f.objectNode().put("input","1").put("output","1")));tests.set("comparison",f.objectNode().put("mode","NORMALIZED_WHITESPACE"));return new QuestionCodingSpecClient.Spec(version,"java-21-stdio-v1",f.arrayNode().add("JAVA"),f.objectNode(),f.objectNode(),tests);}
+ private static String fingerprint(String source){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
+}

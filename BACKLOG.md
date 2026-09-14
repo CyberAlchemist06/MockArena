@@ -51,7 +51,7 @@ This is not a committed roadmap or release promise. Items are intentionally defe
 
 - [ ] Evaluation Service
   - MCQ historical evaluation/result persistence now has an Assessment-owned V1 foundation.
-  - Coding submission snapshots and an Assessment-owned durable outbox now exist; delivery relay, Evaluation Service jobs, and coding result callbacks remain future work.
+  - Coding submission snapshots, outbox relay, and Evaluation Service jobs now exist; runner delivery and coding result callbacks remain future work.
 
 - [ ] Secure sandboxed code execution
   - Treat candidate code as hostile.
@@ -63,6 +63,7 @@ This is not a committed roadmap or release promise. Items are intentionally defe
 
 - [ ] Coding evaluation and final mixed-assessment scoring
   - MCQ-only scoring and durable derived result facts exist; coding items intentionally remain pending.
+  - Evaluation prepares answered Java jobs for a future runner and represents unanswered items deterministically; no coding result is applied yet.
 
 - [ ] Advanced result release and review controls
   - V1 read enforcement supports immutable IMMEDIATE/SCHEDULED/MANUAL policy visibility; creator-controlled release workflow and answer review remain future work.

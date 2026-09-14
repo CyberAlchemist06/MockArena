@@ -8,6 +8,7 @@ Checkpoint date: 2026-09-14
 - Challenge Service (`8081`): generic question selection and immutable challenge manifests.
 - Identity Service (`8082`): local user identity and access-token issuance.
 - Assessment Service (`8083`): assessments, publication, candidate attempts/content/autosave, and anonymous public catalogue reads.
+- Evaluation Service (`8084`): durable coding-evaluation job acceptance and protected job preparation; no runner or code execution.
 - Next.js frontend: same-origin BFF, public catalogue, and authenticated candidate flows.
 
 PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container. Each service owns its own PostgreSQL schema; services communicate over versioned REST APIs and never read another service's tables.
@@ -76,7 +77,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 
 - An authenticated Attempt owner can idempotently submit an `IN_PROGRESS` Attempt; submission stores `submittedAt`, transitions it to `SUBMITTED`, and locks further response mutation.
 - Submission locks the local Attempt, applies deadline expiry before accepting a submit, and does not call Question or Challenge Service. A local synchronous-after-commit listener then makes a best-effort MCQ evaluation attempt; listener failure leaves the submission successful and retryable.
-- The same submit transaction snapshots every coding response (including explicit unanswered state) and creates one opaque durable coding-evaluation outbox record per coding item. No relay, Evaluation Service, runner, or code execution is implemented yet.
+- The same submit transaction snapshots every coding response (including explicit unanswered state) and creates one opaque durable coding-evaluation outbox record per coding item. A disabled-by-default relay now delivers reference-only events at least once to Evaluation Service; no runner or code execution is implemented yet.
 
 ### MCQ evaluation and durable results
 
@@ -125,10 +126,10 @@ The bootstrap has not been claimed as successfully executed in this repository s
 
 The canonical future-work list is [BACKLOG.md](../BACKLOG.md). This status document remains the source of truth for implemented capabilities.
 
-- Durable outbox relay/Evaluation Service, coding sandbox execution and callbacks, percentile, leaderboard, and advanced result release/review controls.
+- Coding sandbox execution and callbacks, percentile, leaderboard, and advanced result release/review controls.
 - Identity refresh tokens, logout, MFA, social login, and organization support.
 - Redis, Kafka, payments, billing, production entitlement service, and AI skill diagnosis.
 
 ## Next development milestone
 
-Implement durable Evaluation Service job delivery, isolated coding sandbox execution, and coding result callbacks.
+Implement isolated coding sandbox execution and coding result callbacks.
