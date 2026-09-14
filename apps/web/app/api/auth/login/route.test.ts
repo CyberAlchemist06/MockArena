@@ -1,0 +1,6 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/api/server", () => ({ identityLogin: vi.fn(), ServiceError: class ServiceError extends Error { constructor(public status: number, public code?: string) { super(); } } }));
+vi.mock("@/lib/auth/session", () => ({ ACCESS_COOKIE:"mockarena_access", accessCookieOptions: (maxAge:number) => ({ httpOnly:true, sameSite:"lax", secure:false, path:"/", maxAge }) }));
+import { identityLogin } from "@/lib/api/server";
+import { POST } from "./route";
+describe("login BFF", () => { beforeEach(() => vi.clearAllMocks()); it("sets the JWT only as an HttpOnly cookie and does not serialize it", async () => { vi.mocked(identityLogin).mockResolvedValue({ accessToken:"header.payload.signature", tokenType:"Bearer", expiresInSeconds:900 }); const response = await POST(new Request("http://web/api/auth/login", { method:"POST", body:JSON.stringify({email:"a@example.com",password:"secret"}) })); expect(await response.json()).toEqual({ok:true}); const cookie=response.headers.get("set-cookie") ?? ""; expect(cookie).toContain("mockarena_access=header.payload.signature"); expect(cookie).toContain("HttpOnly"); expect(cookie).toContain("SameSite=lax"); }); });

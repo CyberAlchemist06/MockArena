@@ -1,0 +1,9 @@
+"use client";
+import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeReturnTo } from "@/lib/auth/return-to";
+export function AuthForm({ mode }: { mode: "login" | "register" }) {
+  const router = useRouter(); const search = useSearchParams(); const [error, setError] = useState(""); const [pending, setPending] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); setError(""); setPending(true); const data = new FormData(event.currentTarget); const body = { email: data.get("email"), password: data.get("password"), ...(mode === "register" ? { displayName: data.get("displayName") } : {}) }; try { const response = await fetch(`/api/auth/${mode}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) }); if (!response.ok) { const problem = await response.json().catch(() => ({})); setError(problem.code === "INVALID_CREDENTIALS" ? "Invalid email or password." : "We could not complete that request."); return; } router.replace(safeReturnTo(search.get("returnTo"), "/candidate")); router.refresh(); } catch { setError("Network error. Please try again."); } finally { setPending(false); } }
+  return <form className="form" onSubmit={submit}>{mode === "register" && <label>Display name<input required name="displayName" autoComplete="name" /></label>}<label>Email<input required name="email" type="email" autoComplete="email" /></label><label>Password<input required name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} /></label>{error && <p className="error" role="alert">{error}</p>}<button className="button" disabled={pending}>{pending ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}</button></form>;
+}

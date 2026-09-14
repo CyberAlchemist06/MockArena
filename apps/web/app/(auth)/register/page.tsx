@@ -1,0 +1,2 @@
+import Link from "next/link"; import { Suspense } from "react"; import { AuthForm } from "@/components/auth/auth-form";
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) { const { returnTo } = await searchParams; const loginHref = returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"; return <main className="shell"><h1>Create your account</h1><Suspense fallback={<p>Loading…</p>}><AuthForm mode="register" /></Suspense><p>Already registered? <Link href={loginHref}>Log in</Link>.</p></main>; }

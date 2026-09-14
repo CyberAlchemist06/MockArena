@@ -1,0 +1,2 @@
+export function remainingSeconds(deadlineAt: string | null, now = Date.now()): number | null { if (!deadlineAt) return null; return Math.max(0, Math.ceil((new Date(deadlineAt).getTime() - now) / 1000)); }
+export function formatRemaining(seconds: number | null): string { if (seconds === null) return "Untimed"; return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`; }

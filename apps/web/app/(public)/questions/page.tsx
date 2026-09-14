@@ -1,0 +1,1 @@
+export default function QuestionsPage() { return <><h1>Question bank</h1><p className="notice">Question discovery is coming soon. This page intentionally does not query internal Question Service APIs.</p></>; }

@@ -1,0 +1,13 @@
+export type User = { userId: string; email: string; displayName: string; roles: string[] };
+export type LoginResponse = { accessToken: string; tokenType: "Bearer"; expiresInSeconds: number };
+export type Attempt = { attemptId: string; assessmentId: string; assessmentVersionId: string; assessmentVersionNumber: number; status: "IN_PROGRESS" | "SUBMITTED" | "COMPLETED" | "EXPIRED"; startedAt: string; deadlineAt: string | null; expiredAt: string | null; version: number };
+export type CandidateQuestion = { position: number; challengeId: string; challengeVersionId: string; questionId: string; questionVersionId: string; questionTypeCode: "MCQ" | "CODING"; title: string; stem: string; options: Array<{ id: string; text: string }>; constraints: string | null; examples: unknown; programmingLanguages: unknown };
+export type CandidateContent = { items: CandidateQuestion[]; deadlineAt: string | null };
+export type SavedResponse = { attemptId: string; globalPosition: number; responseTypeCode: "MCQ" | "CODING"; selectedOptionId: string | null; programmingLanguage: string | null; sourceCode: string | null; version: number };
+export type SaveResponseInput = { responseTypeCode: "MCQ" | "CODING"; selectedOptionId?: string; programmingLanguage?: string; sourceCode?: string; expectedResponseVersion: number; clientMutationId: string };
+export type ApiErrorBody = { code?: string; message?: string };
+export type PublicTiming = { policyCode: string; attemptDurationSeconds: number | null };
+export type PublicAvailability = { availableFrom: string | null; availableUntil: string | null };
+export type PublicAssessment = { assessmentId: string; versionNumber: number; title: string; description: string | null; assessmentTypeCode: string; visibility: "PUBLIC"; timing: PublicTiming; availability: PublicAvailability; questionCount: number; questionTypeCounts: Record<string, number> };
+export type PublicAssessmentDetail = PublicAssessment & { instructionsSummary: string | null; attemptPolicy: { policyCode: string; maxAttempts: number }; resultRelease: { policyCode: string; releaseAt: string | null } };
+export type PublicCataloguePage = { items: PublicAssessment[]; nextCursor: string | null };

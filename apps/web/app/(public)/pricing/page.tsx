@@ -1,0 +1,1 @@
+export default function PricingPage() { return <><h1>Pricing</h1><p className="notice">Pricing is a placeholder. Billing, subscriptions, and payment processing are intentionally not implemented in this slice.</p></>; }

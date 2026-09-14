@@ -1,0 +1,1 @@
+export default function CompaniesPage() { return <><h1>Companies and assessment providers</h1><p className="notice">Company discovery is coming soon. No company catalogue is persisted or inferred by this frontend.</p></>; }
