@@ -53,7 +53,10 @@ This is not a committed roadmap or release promise. Items are intentionally defe
   - Separate service boundary; MCQ and coding evaluation; historical QuestionVersion correctness; idempotent evaluation.
 
 - [ ] Secure sandboxed code execution
-  - Treat candidate code as hostile: CPU, memory, time, network, process, and filesystem isolation.
+  - Treat candidate code as hostile.
+  - Use an isolated, ephemeral runner with CPU, memory, process, and time limits.
+  - Deny network access and isolate the filesystem.
+  - Execute as a non-root user, enforce output limits and rate limiting, and destroy the runner after execution.
   - Hidden tests must never reach candidate clients.
 
 - [ ] Score calculation and result model

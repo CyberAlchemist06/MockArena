@@ -24,3 +24,6 @@ $env:ASSESSMENT_CATALOGUE_BACKFILL_ENABLED = "true"
 ```
 
 The runner is disabled by default. It finds only current `PUBLIC` + `PUBLISHED` rows missing a projection, uses Challenge Service's internal V2 manifest API to calculate safe counts, and logs each success or failure. It is idempotent: reruns do not replace existing projections. Set the variable back to `false` or remove it after the run.
+# Attempt submission
+
+`POST /api/v1/attempts/{attemptId}/submit` requires the owner JWT and an `Idempotency-Key`. It changes only an in-progress local Attempt to `SUBMITTED`; it does not evaluate, score, or retrieve Question/Challenge data. Submitted Attempts reject response writes.

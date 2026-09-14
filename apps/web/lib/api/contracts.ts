@@ -1,6 +1,7 @@
 export type User = { userId: string; email: string; displayName: string; roles: string[] };
 export type LoginResponse = { accessToken: string; tokenType: "Bearer"; expiresInSeconds: number };
 export type Attempt = { attemptId: string; assessmentId: string; assessmentVersionId: string; assessmentVersionNumber: number; status: "IN_PROGRESS" | "SUBMITTED" | "COMPLETED" | "EXPIRED"; startedAt: string; deadlineAt: string | null; expiredAt: string | null; version: number };
+export type AttemptSubmission = { attemptId: string; status: "SUBMITTED"; submittedAt: string; deadlineAt: string | null };
 export type CandidateQuestion = { position: number; challengeId: string; challengeVersionId: string; questionId: string; questionVersionId: string; questionTypeCode: "MCQ" | "CODING"; title: string; stem: string; options: Array<{ id: string; text: string }>; constraints: string | null; examples: unknown; programmingLanguages: unknown };
 export type CandidateContent = { items: CandidateQuestion[]; deadlineAt: string | null };
 export type SavedResponse = { attemptId: string; globalPosition: number; responseTypeCode: "MCQ" | "CODING"; selectedOptionId: string | null; programmingLanguage: string | null; sourceCode: string | null; version: number };

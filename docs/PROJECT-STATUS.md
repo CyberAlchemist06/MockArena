@@ -71,6 +71,11 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 - Saves require idempotency and client-mutation identifiers plus an expected response version; retries replay safely and stale writes return a conflict.
 - PostgreSQL is authoritative. Redis is intentionally not used, and the autosave path does not call Question or Challenge Service.
 
+### Attempt submission
+
+- An authenticated Attempt owner can idempotently submit an `IN_PROGRESS` Attempt; submission stores `submittedAt`, transitions it to `SUBMITTED`, and locks further response mutation.
+- Submission locks the local Attempt, applies deadline expiry before accepting a submit, and does not call Question or Challenge Service. Evaluation and results remain deferred.
+
 ### Public Assessment Catalogue
 
 - Anonymous list and detail APIs return only current `PUBLIC` + `PUBLISHED` AssessmentVersion summaries from an Assessment-owned PostgreSQL projection.
