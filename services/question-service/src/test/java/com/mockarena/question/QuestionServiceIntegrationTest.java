@@ -275,6 +275,41 @@ class QuestionServiceIntegrationTest {
             .andExpect(jsonPath("$.entries[0].defaultScoringPolicy").doesNotExist());
     }
 
+    @Test void v2CatalogUsesOpaqueCursorForStableCompleteKeysetTraversal() throws Exception {
+        List<UUID> questionIds = java.util.stream.IntStream.range(0, 5)
+                .mapToObj(index -> UUID.nameUUIDFromBytes(("cursor-question-" + index).getBytes())).toList();
+        for (UUID questionId : questionIds) {
+            UUID versionId = insertCatalogVersion(questionId, 1, "PUBLISHED", "Cursor " + questionId, List.of("arrays"), "EASY", List.of("JAVA"));
+            markCurrent(questionId, versionId);
+        }
+
+        var first = json.readTree(mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limit\":2}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries.length()").value(2))
+                .andExpect(jsonPath("$.nextCursor").isNotEmpty()).andReturn().getResponse().getContentAsString());
+        String firstCursor = first.get("nextCursor").asText();
+        var second = json.readTree(mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limit\":2,\"cursor\":\"" + firstCursor + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries.length()").value(2))
+                .andExpect(jsonPath("$.nextCursor").isNotEmpty()).andReturn().getResponse().getContentAsString());
+        var last = json.readTree(mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limit\":2,\"cursor\":\"" + second.get("nextCursor").asText() + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries.length()").value(1))
+                .andExpect(jsonPath("$.nextCursor").value(org.hamcrest.Matchers.nullValue())).andReturn().getResponse().getContentAsString());
+
+        List<String> returned = java.util.stream.Stream.of(first, second, last).flatMap(page -> java.util.stream.StreamSupport.stream(page.get("entries").spliterator(), false))
+                .map(entry -> entry.get("questionId").asText() + ":" + entry.get("questionVersionId").asText()).toList();
+        assertThat(returned).doesNotHaveDuplicates();
+        assertThat(returned).hasSize(5);
+        assertThat(returned).isSorted(); // canonical traversal is questionId then questionVersionId.
+
+        mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"limit\":2,\"cursor\":\"not-an-opaque-cursor\"}"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON).content("{\"limit\":2}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.entries.length()").value(2));
+    }
+
     @Test void historicalGenericMetadataIsReadWithoutRewritingPublishedQuestionVersions() throws Exception {
         String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(UUID.randomUUID())))
             .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

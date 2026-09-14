@@ -11,7 +11,7 @@ import jakarta.persistence.OptimisticLockException;
 @RestControllerAdvice
 public class ApiExceptionHandler {
     record ErrorResponse(String code, String message) { }
-    @ExceptionHandler({MethodArgumentNotValidException.class, org.springframework.http.converter.HttpMessageNotReadableException.class})
+    @ExceptionHandler({MethodArgumentNotValidException.class, org.springframework.http.converter.HttpMessageNotReadableException.class, IllegalArgumentException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST) ErrorResponse validation(Exception exception) { return new ErrorResponse("VALIDATION_ERROR", "Request validation failed"); }
     @ExceptionHandler(InsufficientQuestionsException.class) @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     ErrorResponse insufficient(InsufficientQuestionsException exception) { return new ErrorResponse("QUESTION_SELECTION_INSUFFICIENT", exception.getMessage()); }

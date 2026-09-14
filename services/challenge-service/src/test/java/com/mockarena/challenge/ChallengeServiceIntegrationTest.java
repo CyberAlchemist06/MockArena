@@ -18,6 +18,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -194,7 +195,110 @@ class ChallengeServiceIntegrationTest {
         assertThat(jdbc.queryForObject("select status from challenge.challenge_versions where challenge_id = ?", String.class, UUID.fromString(challengeId))).isEqualTo("DRAFT");
     }
 
+    @Test void composesMultiGroupPreviewWithExactTypesAndRejectsProductPolicyViolations() throws Exception {
+        List<QuestionCatalogEntry> mcq = java.util.stream.IntStream.range(0, 5).mapToObj(i -> new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "MCQ")).toList();
+        List<QuestionCatalogEntry> coding = java.util.stream.IntStream.range(0, 5).mapToObj(i -> new QuestionCatalogEntry(UUID.randomUUID(), UUID.randomUUID(), "CODING")).toList();
+        when(catalog.resolvePage(any(), any())).thenAnswer(invocation -> {
+            var group = invocation.getArgument(0, com.mockarena.challenge.domain.SelectionGroup.class);
+            return new QuestionCatalogClient.CatalogPage(group.questionTypeCodes().getFirst().equals("MCQ") ? mcq : coding, null);
+        });
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(5, 5)))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.selectionGroups.length()").value(2))
+                .andExpect(jsonPath("$.resolvedQuestions.length()").value(10)).andExpect(jsonPath("$.resolvedQuestions[0].questionTypeCode").value("MCQ"));
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(101, 0))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(0, 11))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(9, 0))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(10, 0).replace("\"requestedQuestionCount\":10", "\"requestedQuestionCount\":0"))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(10, 0).replace("\"programmingLanguages\":[]", "\"programmingLanguages\":[\"JAVA\"]"))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content("""
+                {"title":"Duplicate","visibility":"PUBLIC","selectionGroups":[
+                  {"taxonomyAll":[],"questionTypeCodes":["MCQ"],"difficultyProfiles":[],"contentLocales":[],"programmingLanguages":[],"requestedQuestionCount":5},
+                  {"taxonomyAll":[],"questionTypeCodes":["MCQ"],"difficultyProfiles":[],"contentLocales":[],"programmingLanguages":[],"requestedQuestionCount":5}]}
+                """)).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content("""
+                {"title":"Unsupported","visibility":"PUBLIC","selectionGroups":[
+                  {"taxonomyAll":[],"questionTypeCodes":["ESSAY"],"difficultyProfiles":[],"contentLocales":[],"programmingLanguages":[],"requestedQuestionCount":10}]}
+                """)).andExpect(status().isBadRequest());
+    }
+
+    @Test void supportsMaximumMixedCompositionWithUniqueOrderedManifestMetadata() throws Exception {
+        List<QuestionCatalogEntry> mcq = entries("maximum-mcq", 100, "MCQ");
+        List<QuestionCatalogEntry> coding = entries("maximum-coding", 10, "CODING");
+        when(catalog.resolvePage(any(), any())).thenAnswer(invocation -> {
+            var group = invocation.getArgument(0, com.mockarena.challenge.domain.SelectionGroup.class);
+            return new QuestionCatalogClient.CatalogPage(group.questionTypeCodes().getFirst().equals("MCQ") ? mcq : coding, null);
+        });
+
+        String body = mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(100, 10)))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.resolvedQuestions.length()").value(110))
+                .andReturn().getResponse().getContentAsString();
+        var questions = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("resolvedQuestions");
+        assertThat(questions).hasSize(110);
+        assertThat(java.util.stream.StreamSupport.stream(questions.spliterator(), false).filter(node -> "MCQ".equals(node.get("questionTypeCode").asText())).count()).isEqualTo(100);
+        assertThat(java.util.stream.StreamSupport.stream(questions.spliterator(), false).filter(node -> "CODING".equals(node.get("questionTypeCode").asText())).count()).isEqualTo(10);
+        assertThat(java.util.stream.StreamSupport.stream(questions.spliterator(), false).map(node -> node.get("questionId").asText()).distinct().count()).isEqualTo(110);
+        for (int index = 0; index < 110; index++) assertThat(questions.get(index).get("position").asInt()).isEqualTo(index + 1);
+    }
+
+    @Test void continuesPagingAfterGlobalDeduplicationAndFailsAtomicallyWhenReplacementIsMissing() throws Exception {
+        UUID shared = UUID.nameUUIDFromBytes("shared-logical-question".getBytes());
+        List<QuestionCatalogEntry> groupOne = new java.util.ArrayList<>();
+        groupOne.add(new QuestionCatalogEntry(shared, UUID.nameUUIDFromBytes("shared-v1".getBytes()), "MCQ"));
+        groupOne.addAll(entries("page-mcq", 4, "MCQ"));
+        List<QuestionCatalogEntry> firstCodingPage = new java.util.ArrayList<>();
+        firstCodingPage.add(new QuestionCatalogEntry(shared, UUID.nameUUIDFromBytes("shared-v2".getBytes()), "CODING"));
+        firstCodingPage.addAll(entries("page-coding", 4, "CODING"));
+        List<QuestionCatalogEntry> secondCodingPage = entries("page-coding-later", 1, "CODING");
+        AtomicInteger codingCalls = new AtomicInteger();
+        when(catalog.resolvePage(any(), any())).thenAnswer(invocation -> {
+            var group = invocation.getArgument(0, com.mockarena.challenge.domain.SelectionGroup.class);
+            if (group.questionTypeCodes().getFirst().equals("MCQ")) return new QuestionCatalogClient.CatalogPage(groupOne, null);
+            return codingCalls.getAndIncrement() == 0 ? new QuestionCatalogClient.CatalogPage(firstCodingPage, "later") : new QuestionCatalogClient.CatalogPage(secondCodingPage, null);
+        });
+        String body = mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(5, 5)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        assertThat(codingCalls.get()).isEqualTo(2);
+        var questions = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body).get("resolvedQuestions");
+        assertThat(java.util.stream.StreamSupport.stream(questions.spliterator(), false).map(node -> node.get("questionId").asText()).distinct().count()).isEqualTo(10);
+
+        int before = jdbc.queryForObject("select count(*) from challenge.challenges", Integer.class);
+        codingCalls.set(0);
+        org.mockito.Mockito.reset(catalog);
+        when(catalog.resolvePage(any(), any())).thenAnswer(invocation -> {
+            var group = invocation.getArgument(0, com.mockarena.challenge.domain.SelectionGroup.class);
+            if (group.questionTypeCodes().getFirst().equals("MCQ")) return new QuestionCatalogClient.CatalogPage(groupOne, null);
+            return new QuestionCatalogClient.CatalogPage(firstCodingPage, null);
+        });
+        mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(5, 5)))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("QUESTION_SELECTION_INSUFFICIENT"));
+        assertThat(jdbc.queryForObject("select count(*) from challenge.challenges", Integer.class)).isEqualTo(before);
+    }
+
+    @Test void usesTheSameSeedForPreviewAndPublicationAndDifferentSeedsProduceKnownDifferentCompositions() throws Exception {
+        List<QuestionCatalogEntry> candidates = entries("seed-candidate", 20, "MCQ");
+        when(catalog.resolvePage(any(), any())).thenReturn(new QuestionCatalogClient.CatalogPage(candidates, null));
+        String first = mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(10, 0, "Seed-A")))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var firstTree = mapper.readTree(first);
+        List<String> preview = questionVersionIds(firstTree.get("resolvedQuestions"));
+        String firstId = firstTree.get("challengeId").asText();
+        String published = mvc.perform(post("/api/v1/challenges/{id}/versions/1/publish", firstId).contentType("application/json")
+                        .content("{\"expectedChallengeVersion\":0,\"expectedVersion\":0}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(questionVersionIds(mapper.readTree(published).get("resolvedQuestions"))).isEqualTo(preview);
+
+        String second = mvc.perform(post("/api/v1/challenges").contentType("application/json").content(multiRequest(10, 0, "Seed-B")))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        // These fixed titles and fixed UUID candidates deliberately exercise distinct persisted seeds.
+        assertThat(questionVersionIds(mapper.readTree(second).get("resolvedQuestions"))).isNotEqualTo(preview);
+    }
+
     private static String request(int count) { return """
             {"title":"Generic challenge","visibility":"PUBLIC","selection":{"taxonomyAll":[{"scheme":"topic","code":"trees"}],"questionTypeCodes":["CODING"],"difficultyProfiles":[{"scheme":"mockarena-v1","code":"MEDIUM"}],"contentLocales":["en"],"programmingLanguages":["JAVA"],"requestedQuestionCount":%d}}
             """.formatted(count); }
+    private static String multiRequest(int mcq, int coding) { return multiRequest(mcq, coding, "Custom"); }
+    private static String multiRequest(int mcq, int coding, String title) { String groups = mcq > 0 ? "{\"taxonomyAll\":[],\"questionTypeCodes\":[\"MCQ\"],\"difficultyProfiles\":[],\"contentLocales\":[],\"programmingLanguages\":[],\"requestedQuestionCount\":" + mcq + "}" : ""; if (coding > 0) groups += (groups.isEmpty() ? "" : ",") + "{\"taxonomyAll\":[],\"questionTypeCodes\":[\"CODING\"],\"difficultyProfiles\":[],\"contentLocales\":[],\"programmingLanguages\":[\"JAVA\"],\"requestedQuestionCount\":" + coding + "}"; return "{\"title\":\"" + title + "\",\"visibility\":\"PUBLIC\",\"selectionGroups\":[" + groups + "]}"; }
+    private static List<QuestionCatalogEntry> entries(String prefix, int count, String type) { return java.util.stream.IntStream.range(0, count).mapToObj(index -> new QuestionCatalogEntry(UUID.nameUUIDFromBytes((prefix + "-question-" + index).getBytes()), UUID.nameUUIDFromBytes((prefix + "-version-" + index).getBytes()), type)).toList(); }
+    private static List<String> questionVersionIds(com.fasterxml.jackson.databind.JsonNode questions) { return java.util.stream.StreamSupport.stream(questions.spliterator(), false).map(node -> node.get("questionVersionId").asText()).toList(); }
 }

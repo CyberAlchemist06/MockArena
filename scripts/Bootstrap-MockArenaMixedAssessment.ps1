@@ -53,7 +53,10 @@ $mcq = @($resolved.entries | Where-Object questionTypeCode -eq 'MCQ'); $coding =
 if ($mcq.Count -ne 6 -or $coding.Count -ne 4 -or (@($resolved.entries.questionId | Select-Object -Unique).Count -ne 10)) { throw 'Question bootstrap does not have exactly six unique MCQ and four unique CODING questions.' }
 
 if (Test-Path $statePath) { $state = Get-Content -Raw $statePath | ConvertFrom-Json } else {
-  $challenge = Invoke-Json POST "$ChallengeBaseUrl/api/v1/challenges" @{title='MockArena Software Engineer Mixed Challenge';visibility='PUBLIC';selection=@{taxonomyAll=@(@{scheme='topic';code=$marker});questionTypeCodes=@('MCQ','CODING');difficultyProfiles=@();contentLocales=@();programmingLanguages=@();requestedQuestionCount=10}}
+  $challenge = Invoke-Json POST "$ChallengeBaseUrl/api/v1/challenges" @{title='MockArena Software Engineer Mixed Challenge';visibility='PUBLIC';selectionGroups=@(
+      @{taxonomyAll=@(@{scheme='topic';code=$marker});questionTypeCodes=@('MCQ');difficultyProfiles=@();contentLocales=@();programmingLanguages=@();requestedQuestionCount=6},
+      @{taxonomyAll=@(@{scheme='topic';code=$marker});questionTypeCodes=@('CODING');difficultyProfiles=@();contentLocales=@();programmingLanguages=@('JAVA');requestedQuestionCount=4}
+    )}
   if (@($challenge.resolvedQuestions).Count -ne 10) { throw 'Challenge did not resolve ten questions; refusing publication.' }
   $publishedChallenge = Invoke-Json POST "$ChallengeBaseUrl/api/v1/challenges/$($challenge.challengeId)/versions/1/publish" @{expectedChallengeVersion=0;expectedVersion=0}
   $assessment = Invoke-Json POST "$AssessmentBaseUrl/api/v1/assessments" @{visibility='PUBLIC';content=@{title='MockArena Software Engineer Assessment';description='A local mixed MCQ and coding development assessment.';instructions='Complete all questions.';assessmentTypeCode='STANDARD';timingPolicy=@{policyCode='FIXED_DURATION';parameters=@{}};attemptDurationSeconds=3600;attemptPolicy=@{policyCode='MAX_ATTEMPTS';parameters=@{maxAttempts=1}};resultReleasePolicy=@{policyCode='IMMEDIATE';parameters=@{}};challengeVersionIds=@($publishedChallenge.challengeVersionId)}}

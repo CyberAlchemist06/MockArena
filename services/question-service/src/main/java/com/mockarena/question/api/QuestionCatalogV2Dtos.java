@@ -15,9 +15,17 @@ public final class QuestionCatalogV2Dtos {
                                  @Size(max = 20) List<@Valid DifficultyProfile> difficultyProfiles,
                                  @Size(max = 20) List<@NotBlank @Size(max = 35) String> contentLocales,
                                  @Size(max = 20) List<@NotBlank @Size(max = 32) String> programmingLanguages,
-                                 @NotNull @Min(1) @Max(100) Integer limit) { }
+                                 @NotNull @Min(1) @Max(100) Integer limit,
+                                 @Size(max = 512) String cursor) {
+        public ResolveRequest(List<TaxonomyFilter> taxonomyAll, List<String> questionTypeCodes, List<DifficultyProfile> difficultyProfiles,
+                              List<String> contentLocales, List<String> programmingLanguages, Integer limit) {
+            this(taxonomyAll, questionTypeCodes, difficultyProfiles, contentLocales, programmingLanguages, limit, null);
+        }
+    }
     public record Entry(UUID questionId, UUID questionVersionId, int versionNumber, String title, String questionTypeCode,
                         String contentLocale, List<TaxonomyAssignment> taxonomy, DifficultyProfile difficultyProfile,
                         List<String> programmingLanguages) { }
-    public record ResolveResponse(List<Entry> entries) { }
+    public record ResolveResponse(List<Entry> entries, String nextCursor) {
+        public ResolveResponse(List<Entry> entries) { this(entries, null); }
+    }
 }

@@ -41,6 +41,8 @@ Challenge Service selects draft QuestionVersions through Question Service V2 usi
 
 Challenge Service publishes a draft by resolving that rule into an immutable ordered manifest and records the current published version on its Challenge. Retiring that version clears the pointer without archiving the Challenge. Its protected internal resolver exposes only published, complete ChallengeVersion metadata for future composition.
 
+Custom Challenge composition may use multiple draft selection groups. Challenge Service alone applies the V1 MCQ/CODING count policy, traverses the generic Question catalogue through opaque cursors, deterministically ranks candidates using the stored ChallengeVersion seed, and deduplicates logical Question IDs across groups before freezing the ID-only manifest. Assessment Service remains unaware of selection groups.
+
 Assessment Service composes only ordered ChallengeVersion identifiers. It validates their published/composable state through Challenge Service's internal resolver and freezes that manifest with timing, attempt, and result-release policy snapshots when an AssessmentVersion is published. It neither accesses Challenge tables nor copies Challenge or Question content.
 
 Assessment Service also owns anonymous public Assessment catalogue reads. It stores a safe local publication-time projection containing only public Assessment metadata, policy summaries, availability, and aggregate Question type counts. Public reads query PostgreSQL directly and require a `PUBLIC`/`PUBLISHED` Assessment, a current-published pointer, and a `PUBLISHED` AssessmentVersion. The public API never calls Challenge or Question Service, exposes manifests, or forwards browser identity.

@@ -15,7 +15,7 @@ import java.util.*;
 public class QuestionVersionCatalogV2Repository {
     private final NamedParameterJdbcTemplate jdbc; private final ObjectMapper json;
     public QuestionVersionCatalogV2Repository(NamedParameterJdbcTemplate jdbc, ObjectMapper json) { this.jdbc=jdbc; this.json=json; }
-    public List<Entry> resolve(ResolveRequest criteria) {
+    public List<Entry> resolve(ResolveRequest criteria, CursorKey cursor, int limit) {
         StringBuilder sql = new StringBuilder("""
             SELECT qv.question_id, qv.id question_version_id, qv.version_number, qv.title,
                    COALESCE(history.question_type_code, qv.question_type_code) question_type_code,
@@ -31,7 +31,7 @@ public class QuestionVersionCatalogV2Repository {
               LEFT JOIN question.question_version_historical_generic_metadata history ON history.question_version_id = qv.id
              WHERE q.lifecycle_status = 'PUBLISHED' AND qv.status = 'PUBLISHED'
             """);
-        MapSqlParameterSource p = new MapSqlParameterSource().addValue("limit", criteria.limit());
+        MapSqlParameterSource p = new MapSqlParameterSource().addValue("limit", limit);
         int i=0;
         for (TaxonomyFilter term : optional(criteria.taxonomyAll())) {
             sql.append(" AND EXISTS (SELECT 1 FROM question.question_version_taxonomy tx WHERE tx.question_version_id=qv.id AND tx.scheme=:ts"+i+" AND tx.code=:tc"+i+")");
@@ -42,6 +42,10 @@ public class QuestionVersionCatalogV2Repository {
         if (!optional(criteria.programmingLanguages()).isEmpty()) { sql.append(" AND COALESCE(history.programming_languages, qv.programming_languages) @> CAST(:languages AS jsonb)"); p.addValue("languages", write(criteria.programmingLanguages())); }
         if (!optional(criteria.difficultyProfiles()).isEmpty()) {
             sql.append(" AND ("); int d=0; for (DifficultyProfile profile : criteria.difficultyProfiles()) { if (d++>0) sql.append(" OR "); sql.append("(COALESCE(history.difficulty_scheme, qv.difficulty_scheme)=:ds"+d+" AND COALESCE(history.difficulty_code, qv.difficulty_code)=:dc"+d+")"); p.addValue("ds"+d,profile.scheme()); p.addValue("dc"+d,profile.code()); } sql.append(")");
+        }
+        if (cursor != null) {
+            sql.append(" AND (qv.question_id > :cursorQuestionId OR (qv.question_id = :cursorQuestionId AND qv.id > :cursorQuestionVersionId))");
+            p.addValue("cursorQuestionId", cursor.questionId()); p.addValue("cursorQuestionVersionId", cursor.questionVersionId());
         }
         sql.append(" ORDER BY qv.question_id, qv.id LIMIT :limit");
         return jdbc.query(sql.toString(), p, this::map);
@@ -56,4 +60,5 @@ public class QuestionVersionCatalogV2Repository {
     private List<String> strings(String value) { try { if(value==null)return List.of(); return json.readValue(value, new com.fasterxml.jackson.core.type.TypeReference<List<String>>(){}); } catch(Exception e){throw new IllegalStateException("Invalid programming language metadata",e);} }
     private String write(Object value) { try { return json.writeValueAsString(value); } catch(Exception e){throw new IllegalStateException("Unable to serialize catalog filter",e);} }
     private static <T> List<T> optional(List<T> list) { return list == null ? List.of() : list; }
+    public record CursorKey(UUID questionId, UUID questionVersionId) { }
 }

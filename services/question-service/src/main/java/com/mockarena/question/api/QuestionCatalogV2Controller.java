@@ -11,6 +11,6 @@ public class QuestionCatalogV2Controller {
     public QuestionCatalogV2Controller(QuestionVersionCatalogV2Service catalog) { this.catalog = catalog; }
     @PostMapping("/resolve")
     public QuestionCatalogV2Dtos.ResolveResponse resolve(@Valid @RequestBody QuestionCatalogV2Dtos.ResolveRequest request) {
-        return new QuestionCatalogV2Dtos.ResolveResponse(catalog.resolve(request));
+        return catalog.resolve(request);
     }
 }

@@ -130,6 +130,8 @@ QuestionVersion metadata is domain-neutral: question-type code, BCP-47 content l
 
 ChallengeVersion rule-based selection uses that same generic metadata: taxonomy assignments, question-type codes, difficulty profiles, content locales, programming languages, and a requested count. The draft rule is mutable only while authoring; its resolved ID-only manifest is the composition boundary.
 
+Custom composition stores an ordered list of generic selection groups as draft ChallengeVersion metadata. V1 policy allows one MCQ group and one CODING group with product-specific count limits; this does not constrain Question Service or the persisted group model. Challenge resolves every group through the paged catalogue, reserves logical Question IDs globally, and orders each selected group by a seed-derived deterministic rank.
+
 Publishing replaces the draft preview with a complete, deterministic manifest and updates Challenge's current published-version reference. Retirement preserves the manifest but clears that reference if it is current; it does not archive the Challenge.
 
 ## Primary relationship flow

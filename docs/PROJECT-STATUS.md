@@ -15,7 +15,7 @@ PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container
 ## Database migrations
 
 - Question Service: V5 `snapshot_generic_metadata_for_historical_question_versions`
-- Challenge Service: V5 `add_question_type_to_challenge_version_manifest`
+- Challenge Service: V6 `add_challenge_version_selection_groups`
 - Identity Service: V1 `identity_schema`
 - Assessment Service: V6 `add_public_assessment_catalogue`
 
@@ -42,6 +42,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 - Draft publication resolves Question Service metadata into an exact, ordered, immutable published QuestionVersion manifest.
 - Published ChallengeVersions can retire without rewriting their historical manifest; retiring the current version clears the current-published pointer but does not archive the Challenge.
 - Internal V1 resolution validates composability, and internal V2 manifest resolution returns only ordered Question/QuestionVersion IDs and type codes.
+- Draft custom composition supports independently requested MCQ and CODING selection groups with deterministic, globally deduplicated resolution. The frontend builder is not implemented yet.
 
 ## Assessment Service
 
