@@ -1,0 +1,1 @@
+package com.mockarena.assessment.infrastructure.question; import com.fasterxml.jackson.databind.JsonNode; import java.util.UUID; public record McqEvaluationData(UUID questionVersionId,String questionTypeCode,String correctOptionId,JsonNode scoringPolicy){}

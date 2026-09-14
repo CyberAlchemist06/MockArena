@@ -23,7 +23,7 @@ Challenge, question, and assessment content is versioned. A draft ChallengeVersi
 
 ## Data and event flow
 
-The web application calls service APIs. Assessment Service records a submission against an active attempt and requests evaluation asynchronously through Kafka. Evaluation Service executes candidate code outside application-service processes in an isolated sandbox, then emits an evaluation outcome. Assessment Service consumes the outcome, updates the authoritative score and ranking records for the assessment version, and serves results and leaderboards. Redis can accelerate read paths, while PostgreSQL remains authoritative.
+The web application calls service APIs. Assessment Service records a submission against an active attempt. For V1 MCQ evaluation it publishes an in-process event after the local submission transaction commits, then calls Question Service's narrow protected historical evaluation endpoint. Assessment Service persists only derived result facts. This is not a durable queue: the internal retry endpoint can reconcile a submitted attempt without a result after a transient failure or process crash. A durable outbox/job runner and separate coding sandbox evaluation remain future work. PostgreSQL remains authoritative.
 
 ## Operational target
 
@@ -52,3 +52,5 @@ For future Attempt routing, Challenge Service additionally exposes a protected V
 Attempt start persists an Assessment-owned, ID-only route built from that manifest. It uses a replaceable entitlement reservation boundary and durable reconciliation record; no payment or entitlement-provider logic is embedded in Assessment content or Attempt domain logic.
 
 Candidate response autosave is also Assessment-owned. It validates an authenticated candidate against the frozen AttemptItem route and persists only the candidate's MCQ selection or coding language/source code in PostgreSQL. It does not call Question or Challenge Service, does not persist Question content or protected evaluation data, and is versioned/idempotent for concurrent browser requests. Redis is intentionally not used; PostgreSQL remains authoritative.
+
+MCQ evaluation consumes only the frozen AttemptItem QuestionVersion IDs. Question Service provides a purpose-specific internal projection containing correct option identity and immutable scoring-policy data for exact historical `PUBLISHED` or `RETIRED` versions. Assessment Service persists derived `AttemptResult` and `AttemptItemResult` facts, not protected answers or candidate source. A fully MCQ Attempt is `EVALUATED`; a mixed attempt is `PARTIALLY_EVALUATED` until coding evaluation exists. Candidate result reads are owner-scoped and read-only, and derive release visibility from the immutable AssessmentVersion policy.

@@ -27,3 +27,13 @@ The runner is disabled by default. It finds only current `PUBLIC` + `PUBLISHED` 
 # Attempt submission
 
 `POST /api/v1/attempts/{attemptId}/submit` requires the owner JWT and an `Idempotency-Key`. It changes only an in-progress local Attempt to `SUBMITTED`; it does not evaluate, score, or retrieve Question/Challenge data. Submitted Attempts reject response writes.
+
+## MCQ evaluation and candidate results
+
+After a successful local submit commit, Assessment Service publishes a local event and performs a best-effort MCQ evaluation using Question Service's protected historical evaluation projection. Evaluation failures do not invalidate the successful submission. The V1 event is synchronous-after-commit, so its work can add submit response latency; it is not a durable job mechanism.
+
+`POST /internal/v1/attempts/{attemptId}/evaluate` is an internal operational retry path for a `SUBMITTED` Attempt. It returns only the attempt ID and aggregate evaluation status and is not exposed through the browser/BFF.
+
+`GET /api/v1/attempts/{attemptId}/result` requires the owner JWT and is read-only. A submitted Attempt with no durable result returns `PENDING`. MCQ-only results can be `EVALUATED`; mixed MCQ/CODING results are `PARTIALLY_EVALUATED`, keep coding items pending, and deliberately omit a final score. Results never return correct answers, explanations, Question scoring-policy data, hidden tests, or candidate source code.
+
+Result visibility is derived from the immutable AssessmentVersion release policy. `IMMEDIATE` returns persisted result facts; `SCHEDULED` stays opaque before its configured `releaseAt`; `MANUAL` remains unavailable until an explicit future release capability exists. The V8 `released_at` column is intentionally not updated by a read.

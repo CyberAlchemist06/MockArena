@@ -147,6 +147,40 @@ class QuestionServiceIntegrationTest {
         mvc.perform(post("/internal/v3/question-versions/candidate-content").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\""+UUID.randomUUID()+"\"]}")).andExpect(status().isNotFound());
     }
 
+    @Test void protectedEvaluationDataUsesExactHistoricalMcqVersionsOnly() throws Exception {
+        UUID publishedQuestion = UUID.randomUUID(), retiredQuestion = UUID.randomUUID();
+        var publishedTree = json.readTree(mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(publishedQuestion))).andReturn().getResponse().getContentAsString());
+        publishedQuestion = UUID.fromString(publishedTree.get("questionId").asText());
+        UUID publishedVersion = UUID.fromString(publishedTree.get("id").asText());
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", publishedQuestion).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+
+        var retiredTree = json.readTree(mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(retiredQuestion))).andReturn().getResponse().getContentAsString());
+        UUID retiredVersion = UUID.fromString(retiredTree.get("id").asText());
+        jdbc.update("update question.question_versions set status='RETIRED' where id=?", retiredVersion);
+        entityManager.clear();
+
+        String body = mvc.perform(post("/internal/v1/question-versions/evaluation-data").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"questionVersionIds\":[\"" + retiredVersion + "\",\"" + publishedVersion + "\"]}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.entries[0].questionVersionId").value(retiredVersion.toString()))
+            .andExpect(jsonPath("$.entries[1].questionVersionId").value(publishedVersion.toString()))
+            .andExpect(jsonPath("$.entries[0].questionTypeCode").value("MCQ"))
+            .andExpect(jsonPath("$.entries[0].correctOptionId").value("inorder"))
+            .andExpect(jsonPath("$.entries[0].scoringPolicy").exists())
+            .andReturn().getResponse().getContentAsString();
+        assertThat(body).contains("correctOptionId");
+
+        mvc.perform(post("/internal/v1/question-versions/evaluation-data").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"questionVersionIds\":[\"" + UUID.randomUUID() + "\"]}"))
+            .andExpect(status().isNotFound());
+        String draft = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validMcqRequest(UUID.randomUUID()))).andReturn().getResponse().getContentAsString();
+        UUID draftVersion = UUID.fromString(json.readTree(draft).get("id").asText());
+        mvc.perform(post("/internal/v1/question-versions/evaluation-data").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"questionVersionIds\":[\"" + draftVersion + "\"]}"))
+            .andExpect(status().isNotFound());
+    }
+
     @Test void rejectsMcqWithFewerThanTwoOptionsInvalidCorrectOptionOrDuplicateOptionIds() throws Exception {
         assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("{\"id\":\"preorder\",\"text\":\"Preorder\"},{\"id\":\"inorder\",\"text\":\"Inorder\"},{\"id\":\"postorder\",\"text\":\"Postorder\"}", "{\"id\":\"preorder\",\"text\":\"Preorder\"}"));
         assertInvalidContent(validMcqRequest(UUID.randomUUID()).replace("\"correctOptionId\":\"inorder\"", "\"correctOptionId\":\"missing\""));

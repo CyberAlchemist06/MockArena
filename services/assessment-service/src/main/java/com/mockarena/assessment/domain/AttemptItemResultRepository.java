@@ -1,0 +1,1 @@
+package com.mockarena.assessment.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface AttemptItemResultRepository extends JpaRepository<AttemptItemResult,AttemptItemResponseId>{List<AttemptItemResult> findByAttemptIdOrderByGlobalPositionAsc(UUID id);}

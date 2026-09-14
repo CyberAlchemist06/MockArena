@@ -30,6 +30,13 @@ public final class AssessmentDtos {
                                        String programmingLanguage, String sourceCode, long version) {
         @Override public String toString() { return "SavedAttemptResponse[attemptId=" + attemptId + ", globalPosition=" + globalPosition + ", responseTypeCode=" + responseTypeCode + ", version=" + version + "]"; }
     }
+    public record AttemptResultItemResponse(int globalPosition, String questionTypeCode, String evaluationStatus,
+                                            String outcome, java.math.BigDecimal awardedScore, java.math.BigDecimal maxScore) { }
+    public record CandidateAttemptResultResponse(UUID attemptId, String evaluationStatus, java.math.BigDecimal score,
+                                                 java.math.BigDecimal maxScore, java.math.BigDecimal percentage,
+                                                 java.time.Instant evaluatedAt, java.time.Instant releasedAt,
+                                                 List<AttemptResultItemResponse> items) { }
+    public record InternalEvaluationResponse(UUID attemptId, String evaluationStatus) { }
     public record ChallengeReferenceResponse(int position, UUID challengeId, UUID challengeVersionId, int challengeVersionNumber) { }
     public record AssessmentResponse(UUID assessmentId, UUID createdByUserId, String lifecycleStatus, AssessmentVisibility visibility, UUID currentPublishedVersionId, long version) { }
     public record AssessmentVersionResponse(UUID assessmentVersionId, UUID assessmentId, int versionNumber, String status, String title, String description, String instructions,

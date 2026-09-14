@@ -20,6 +20,8 @@ The `/actuator/health` endpoints remain public. The `/internal/**` catalog APIs 
 
 Challenge Service can query the metadata-only internal catalog at `POST /internal/v1/question-versions/resolve`. It returns only currently reusable published QuestionVersions and never returns question prompts, constraints, examples, tests, scoring, or execution limits. Authentication for this internal route is intentionally deferred in V1.
 
+Assessment Service can use `POST /internal/v1/question-versions/evaluation-data` only for MCQ evaluation of exact historical `PUBLISHED` or `RETIRED` QuestionVersion IDs. This is a narrow protected projection containing the version ID, MCQ type, correct option identifier, and immutable scoring-policy snapshot. It is not available through candidate or public routes; candidate-content remains free of correct answers, explanations, and protected coding material.
+
 Published question versions are immutable in both application rules and a PostgreSQL trigger. Mutating version operations require the client’s JPA version value; PostgreSQL's unique `(question_id, version_number)` constraint provides an additional concurrency safeguard. No distributed locking is used.
 
 Health is at `/actuator/health`; Kubernetes-compatible probe paths are `/actuator/health/liveness` and `/actuator/health/readiness`.

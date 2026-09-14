@@ -50,7 +50,8 @@ This is not a committed roadmap or release promise. Items are intentionally defe
 ## Evaluation and Results
 
 - [ ] Evaluation Service
-  - Separate service boundary; MCQ and coding evaluation; historical QuestionVersion correctness; idempotent evaluation.
+  - MCQ historical evaluation/result persistence now has an Assessment-owned V1 foundation.
+  - Future work includes a durable evaluation job/outbox and separate coding evaluation boundary.
 
 - [ ] Secure sandboxed code execution
   - Treat candidate code as hostile.
@@ -59,10 +60,11 @@ This is not a committed roadmap or release promise. Items are intentionally defe
   - Execute as a non-root user, enforce output limits and rate limiting, and destroy the runner after execution.
   - Hidden tests must never reach candidate clients.
 
-- [ ] Score calculation and result model
+- [ ] Coding evaluation and final mixed-assessment scoring
+  - MCQ-only scoring and durable derived result facts exist; coding items intentionally remain pending.
 
-- [ ] Result release policies
-  - Immediate, scheduled, and creator-controlled release if product requires it.
+- [ ] Advanced result release and review controls
+  - V1 read enforcement supports immutable IMMEDIATE/SCHEDULED/MANUAL policy visibility; creator-controlled release workflow and answer review remain future work.
 
 - [ ] Percentile / ranking model
 

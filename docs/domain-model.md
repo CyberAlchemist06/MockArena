@@ -136,4 +136,8 @@ Publishing replaces the draft preview with a complete, deterministic manifest an
 
 ## Primary relationship flow
 
-`User` creates and shares `Challenge` in Challenge Service → a draft `ChallengeVersion` dynamically selects QuestionVersions from Question Service using `EXPLICIT` or `RULE_BASED` selection → publication freezes an ordered immutable QuestionVersion manifest → `AssessmentVersion` selects immutable `ChallengeVersions` → candidate `User` creates an `Attempt` → `Submission` is asynchronously processed as an `Evaluation` → Assessment Service applies `Score` records → the completed attempt contributes a version-scoped `LeaderboardEntry` and percentile.
+`User` creates and shares `Challenge` in Challenge Service → a draft `ChallengeVersion` dynamically selects QuestionVersions from Question Service using `EXPLICIT` or `RULE_BASED` selection → publication freezes an ordered immutable QuestionVersion manifest → `AssessmentVersion` selects immutable `ChallengeVersions` → candidate `User` creates an `Attempt` → `Submission` may produce an Assessment-owned MCQ result from exact historical QuestionVersion data. Coding evaluation, ranking, and percentile remain future work.
+
+## V1 MCQ result slice
+
+`AttemptItem.questionVersionId` is the historical correctness key. Question Service exposes protected MCQ evaluation data only through an internal purpose-specific projection for exact published or retired versions. Assessment Service stores `AttemptResult` and `AttemptItemResult` derived facts. MCQ-only attempts can become `EVALUATED`; mixed MCQ/CODING attempts remain `PARTIALLY_EVALUATED` with coding items `PENDING` and no final aggregate score. Candidate result reads are owner-scoped, do not trigger evaluation, and are released according to the immutable AssessmentVersion policy.

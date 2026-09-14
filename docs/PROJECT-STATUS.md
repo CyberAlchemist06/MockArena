@@ -17,7 +17,7 @@ PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container
 - Question Service: V5 `snapshot_generic_metadata_for_historical_question_versions`
 - Challenge Service: V6 `add_challenge_version_selection_groups`
 - Identity Service: V1 `identity_schema`
-- Assessment Service: V6 `add_public_assessment_catalogue`
+- Assessment Service: V8 `add_attempt_results`
 
 All schema evolution uses Flyway. Published QuestionVersions, ChallengeVersions, and AssessmentVersions/manifests are protected as immutable historical records.
 
@@ -74,7 +74,15 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 ### Attempt submission
 
 - An authenticated Attempt owner can idempotently submit an `IN_PROGRESS` Attempt; submission stores `submittedAt`, transitions it to `SUBMITTED`, and locks further response mutation.
-- Submission locks the local Attempt, applies deadline expiry before accepting a submit, and does not call Question or Challenge Service. Evaluation and results remain deferred.
+- Submission locks the local Attempt, applies deadline expiry before accepting a submit, and does not call Question or Challenge Service. A local synchronous-after-commit listener then makes a best-effort MCQ evaluation attempt; listener failure leaves the submission successful and retryable.
+
+### MCQ evaluation and durable results
+
+- Question Service provides a narrow internal historical MCQ evaluation projection for exact `PUBLISHED` or `RETIRED` QuestionVersion IDs. It is the only evaluation route that returns protected correct-option data.
+- Assessment Service evaluates immutable AttemptItem QuestionVersion IDs and stores only derived result facts in V8 `attempt_results` and `attempt_item_results`; it does not persist correct answers, protected Question payloads, or candidate source code.
+- MCQ-only Attempts become `EVALUATED` with deterministic score, max score, and percentage. Mixed attempts become `PARTIALLY_EVALUATED`: MCQ outcomes are stored, coding items remain `PENDING`, and no final total is exposed.
+- `GET /api/v1/attempts/{attemptId}/result` is owner-scoped and read-only. It returns `PENDING` when a submitted attempt has no durable result and enforces immutable IMMEDIATE/SCHEDULED/MANUAL release policy visibility.
+- `POST /internal/v1/attempts/{attemptId}/evaluate` is a temporary idempotent operational retry path until durable outbox/job execution exists.
 
 ### Public Assessment Catalogue
 
@@ -114,11 +122,11 @@ The bootstrap has not been claimed as successfully executed in this repository s
 
 The canonical future-work list is [BACKLOG.md](../BACKLOG.md). This status document remains the source of truth for implemented capabilities.
 
-- Attempt submission, evaluation/code execution, scoring, percentile, leaderboard, and result release execution.
+- Durable evaluation job/outbox execution, coding evaluation/code execution, percentile, leaderboard, and advanced result release/review controls.
 - Monaco editor.
 - Identity refresh tokens, logout, MFA, social login, and organization support.
 - Redis, Kafka, payments, billing, production entitlement service, and AI skill diagnosis.
 
 ## Next development milestone
 
-Implement assessment submission/evaluation and result release, followed by the Monaco coding editor, scoring, and percentile/leaderboard capabilities.
+Implement the minimal candidate Result BFF/UI, then durable evaluation jobs, coding sandbox evaluation, and advanced results review.
