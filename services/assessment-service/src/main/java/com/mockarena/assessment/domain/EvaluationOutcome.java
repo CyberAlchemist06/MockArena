@@ -1,1 +1,1 @@
-package com.mockarena.assessment.domain; public enum EvaluationOutcome { CORRECT, INCORRECT, UNANSWERED }
+package com.mockarena.assessment.domain; public enum EvaluationOutcome { CORRECT, INCORRECT, UNANSWERED, PASSED, WRONG_ANSWER, COMPILE_ERROR, RUNTIME_ERROR, TIME_LIMIT_EXCEEDED, OUTPUT_LIMIT_EXCEEDED }

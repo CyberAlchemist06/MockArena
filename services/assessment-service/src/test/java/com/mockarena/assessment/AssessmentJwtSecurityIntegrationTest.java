@@ -73,6 +73,16 @@ class AssessmentJwtSecurityIntegrationTest {
         mvc.perform(get(path).header("Authorization","Bearer "+token(owner,ISSUER,AUDIENCE,Instant.now().plusSeconds(60),KEY_PAIR))).andExpect(status().isUnauthorized());
         mvc.perform(get(path).header("X-MockArena-Workload-Token","assessment-test-workload-token")).andExpect(status().isOk()).andExpect(jsonPath("$.sourceCode").value("class Main {} ".trim())).andExpect(jsonPath("$.hiddenTests").doesNotExist());
     }
+    @Test void codingResultApplicationIsWorkloadOnly() throws Exception {
+        UUID attempt = UUID.randomUUID(), owner = UUID.randomUUID();
+        String path = "/internal/v1/attempts/" + attempt + "/coding-results";
+        mvc.perform(post(path).contentType("application/json").content("{}"))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).header("Authorization", "Bearer " + token(owner, ISSUER, AUDIENCE, Instant.now().plusSeconds(60), KEY_PAIR)).contentType("application/json").content("{}"))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).header("X-MockArena-Workload-Token", "assessment-test-workload-token").contentType("application/json").content("{}"))
+            .andExpect(status().isBadRequest());
+    }
     private void assertUnauthorized(String jwt, UUID versionId) throws Exception { mvc.perform(post("/api/v1/assessments").header("Authorization", "Bearer " + jwt).contentType("application/json").content(request(versionId, UUID.randomUUID()))).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHENTICATED")); }
     private static String request(UUID versionId, UUID untrustedCreator) { return "{\"createdByUserId\":\"" + untrustedCreator + "\",\"visibility\":\"PRIVATE\",\"content\":{\"title\":\"Authenticated assessment\",\"assessmentTypeCode\":\"STANDARD\",\"timingPolicy\":{\"policyCode\":\"UNTIMED\",\"parameters\":{}},\"attemptPolicy\":{\"policyCode\":\"MAX_ATTEMPTS\",\"parameters\":{\"maxAttempts\":1}},\"resultReleasePolicy\":{\"policyCode\":\"IMMEDIATE\",\"parameters\":{}},\"challengeVersionIds\":[\"" + versionId + "\"]}}"; }
     private static String token(UUID subject, String issuer, String audience, Instant expiry, KeyPair signingKey) throws Exception { JWTClaimsSet claims = new JWTClaimsSet.Builder().subject(subject.toString()).issuer(issuer).audience(List.of(audience)).issueTime(Date.from(Instant.now())).expirationTime(Date.from(expiry)).jwtID(UUID.randomUUID().toString()).claim("roles", List.of("USER")).build(); SignedJWT signed = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claims); signed.sign(new RSASSASigner((RSAPrivateKey) signingKey.getPrivate())); return signed.serialize(); }
