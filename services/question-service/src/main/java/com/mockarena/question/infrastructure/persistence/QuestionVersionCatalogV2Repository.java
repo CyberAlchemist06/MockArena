@@ -17,12 +17,18 @@ public class QuestionVersionCatalogV2Repository {
     public QuestionVersionCatalogV2Repository(NamedParameterJdbcTemplate jdbc, ObjectMapper json) { this.jdbc=jdbc; this.json=json; }
     public List<Entry> resolve(ResolveRequest criteria) {
         StringBuilder sql = new StringBuilder("""
-            SELECT qv.question_id, qv.id question_version_id, qv.version_number, qv.title, qv.question_type_code,
-                   qv.content_locale, qv.difficulty_scheme, qv.difficulty_code, qv.programming_languages,
-                   COALESCE(jsonb_agg(jsonb_build_object('scheme', t.scheme, 'code', t.code)) FILTER (WHERE t.question_version_id IS NOT NULL), '[]'::jsonb) taxonomy
+            SELECT qv.question_id, qv.id question_version_id, qv.version_number, qv.title,
+                   COALESCE(history.question_type_code, qv.question_type_code) question_type_code,
+                   COALESCE(history.content_locale, qv.content_locale) content_locale,
+                   COALESCE(history.difficulty_scheme, qv.difficulty_scheme) difficulty_scheme,
+                   COALESCE(history.difficulty_code, qv.difficulty_code) difficulty_code,
+                   COALESCE(history.programming_languages, qv.programming_languages) programming_languages,
+                   COALESCE((SELECT jsonb_agg(jsonb_build_object('scheme', t.scheme, 'code', t.code))
+                               FROM question.question_version_taxonomy t
+                              WHERE t.question_version_id = qv.id), '[]'::jsonb) taxonomy
               FROM question.question_versions qv
               JOIN question.questions q ON q.current_version_id = qv.id
-              LEFT JOIN question.question_version_taxonomy t ON t.question_version_id = qv.id
+              LEFT JOIN question.question_version_historical_generic_metadata history ON history.question_version_id = qv.id
              WHERE q.lifecycle_status = 'PUBLISHED' AND qv.status = 'PUBLISHED'
             """);
         MapSqlParameterSource p = new MapSqlParameterSource().addValue("limit", criteria.limit());
@@ -31,13 +37,13 @@ public class QuestionVersionCatalogV2Repository {
             sql.append(" AND EXISTS (SELECT 1 FROM question.question_version_taxonomy tx WHERE tx.question_version_id=qv.id AND tx.scheme=:ts"+i+" AND tx.code=:tc"+i+")");
             p.addValue("ts"+i, term.scheme()); p.addValue("tc"+i, term.code()); i++;
         }
-        if (!optional(criteria.questionTypeCodes()).isEmpty()) { sql.append(" AND qv.question_type_code IN (:types)"); p.addValue("types", criteria.questionTypeCodes()); }
-        if (!optional(criteria.contentLocales()).isEmpty()) { sql.append(" AND qv.content_locale IN (:locales)"); p.addValue("locales", criteria.contentLocales()); }
-        if (!optional(criteria.programmingLanguages()).isEmpty()) { sql.append(" AND qv.programming_languages @> CAST(:languages AS jsonb)"); p.addValue("languages", write(criteria.programmingLanguages())); }
+        if (!optional(criteria.questionTypeCodes()).isEmpty()) { sql.append(" AND COALESCE(history.question_type_code, qv.question_type_code) IN (:types)"); p.addValue("types", criteria.questionTypeCodes()); }
+        if (!optional(criteria.contentLocales()).isEmpty()) { sql.append(" AND COALESCE(history.content_locale, qv.content_locale) IN (:locales)"); p.addValue("locales", criteria.contentLocales()); }
+        if (!optional(criteria.programmingLanguages()).isEmpty()) { sql.append(" AND COALESCE(history.programming_languages, qv.programming_languages) @> CAST(:languages AS jsonb)"); p.addValue("languages", write(criteria.programmingLanguages())); }
         if (!optional(criteria.difficultyProfiles()).isEmpty()) {
-            sql.append(" AND ("); int d=0; for (DifficultyProfile profile : criteria.difficultyProfiles()) { if (d++>0) sql.append(" OR "); sql.append("(qv.difficulty_scheme=:ds"+d+" AND qv.difficulty_code=:dc"+d+")"); p.addValue("ds"+d,profile.scheme()); p.addValue("dc"+d,profile.code()); } sql.append(")");
+            sql.append(" AND ("); int d=0; for (DifficultyProfile profile : criteria.difficultyProfiles()) { if (d++>0) sql.append(" OR "); sql.append("(COALESCE(history.difficulty_scheme, qv.difficulty_scheme)=:ds"+d+" AND COALESCE(history.difficulty_code, qv.difficulty_code)=:dc"+d+")"); p.addValue("ds"+d,profile.scheme()); p.addValue("dc"+d,profile.code()); } sql.append(")");
         }
-        sql.append(" GROUP BY qv.id ORDER BY qv.question_id, qv.id LIMIT :limit");
+        sql.append(" ORDER BY qv.question_id, qv.id LIMIT :limit");
         return jdbc.query(sql.toString(), p, this::map);
     }
     private Entry map(ResultSet rs, int row) throws SQLException {

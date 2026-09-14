@@ -21,6 +21,15 @@ public final class AssessmentDtos {
     public record CloseAssessmentRequest(@Min(0) long expectedAssessmentVersion) { }
     public record CloseAssessmentVersionRequest(@Min(0) long expectedAssessmentVersion, @Min(0) long expectedVersion) { }
     public record AttemptResponse(UUID attemptId, UUID assessmentId, UUID assessmentVersionId, int assessmentVersionNumber, String status, java.time.Instant startedAt, java.time.Instant deadlineAt, java.time.Instant expiredAt, long version) { }
+    public record SaveAttemptResponseRequest(@NotBlank @Size(max = 64) String responseTypeCode, @Size(max = 200) String selectedOptionId,
+                                             @Size(max = 64) String programmingLanguage, @Size(max = 500_000) String sourceCode,
+                                             @NotNull @Min(0) Long expectedResponseVersion, @NotNull UUID clientMutationId) {
+        @Override public String toString() { return "SaveAttemptResponseRequest[type=" + responseTypeCode + ", expectedResponseVersion=" + expectedResponseVersion + ", clientMutationId=" + clientMutationId + "]"; }
+    }
+    public record SavedAttemptResponse(UUID attemptId, int globalPosition, String responseTypeCode, String selectedOptionId,
+                                       String programmingLanguage, String sourceCode, long version) {
+        @Override public String toString() { return "SavedAttemptResponse[attemptId=" + attemptId + ", globalPosition=" + globalPosition + ", responseTypeCode=" + responseTypeCode + ", version=" + version + "]"; }
+    }
     public record ChallengeReferenceResponse(int position, UUID challengeId, UUID challengeVersionId, int challengeVersionNumber) { }
     public record AssessmentResponse(UUID assessmentId, UUID createdByUserId, String lifecycleStatus, AssessmentVisibility visibility, UUID currentPublishedVersionId, long version) { }
     public record AssessmentVersionResponse(UUID assessmentVersionId, UUID assessmentId, int versionNumber, String status, String title, String description, String instructions,

@@ -23,3 +23,5 @@ public class ApiExceptionHandler {
     @ExceptionHandler({OptimisticLockException.class, org.springframework.orm.ObjectOptimisticLockingFailureException.class}) @ResponseStatus(HttpStatus.CONFLICT) ErrorResponse conflict(Exception exception) { return new ErrorResponse("VERSION_CONFLICT", "The resource was changed by another request"); }
     @ExceptionHandler(IllegalStateException.class) @ResponseStatus(HttpStatus.CONFLICT) ErrorResponse state(IllegalStateException exception) { return new ErrorResponse("INVALID_STATE", exception.getMessage()); }
 }
+    @ExceptionHandler(AttemptNotFoundException.class) @ResponseStatus(HttpStatus.NOT_FOUND) ErrorResponse attemptNotFound(AttemptNotFoundException exception) { return new ErrorResponse("ATTEMPT_NOT_FOUND", "Attempt not found"); }
+    @ExceptionHandler(ResponseVersionConflictException.class) @ResponseStatus(HttpStatus.CONFLICT) ErrorResponse responseVersionConflict(ResponseVersionConflictException exception) { return new ErrorResponse("RESPONSE_VERSION_CONFLICT", "The response was changed by another request"); }

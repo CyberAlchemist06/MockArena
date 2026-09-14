@@ -44,7 +44,7 @@ class QuestionServiceIntegrationTest {
     @BeforeEach void isolateDatabase() {
         // Testcontainers-only fixture reset. TRUNCATE does not invoke the production
         // row-level immutability triggers that ordinary DELETE operations must obey.
-        jdbc.execute("TRUNCATE TABLE question.question_version_taxonomy, question.question_versions, question.questions RESTART IDENTITY CASCADE");
+        jdbc.execute("TRUNCATE TABLE question.question_version_historical_generic_metadata, question.question_version_taxonomy, question.question_versions, question.questions RESTART IDENTITY CASCADE");
     }
     @AfterEach void resetRepositorySpy() { reset(questionVersionRepository); }
 
@@ -273,6 +273,36 @@ class QuestionServiceIntegrationTest {
             .andExpect(jsonPath("$.entries[0].hiddenTests").doesNotExist())
             .andExpect(jsonPath("$.entries[0].correctOptionId").doesNotExist())
             .andExpect(jsonPath("$.entries[0].defaultScoringPolicy").doesNotExist());
+    }
+
+    @Test void historicalGenericMetadataIsReadWithoutRewritingPublishedQuestionVersions() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var createdTree = json.readTree(created);
+        UUID versionId = UUID.fromString(createdTree.required("id").asText());
+        String questionId = createdTree.required("questionId").asText();
+        jdbc.update("""
+                insert into question.question_version_historical_generic_metadata
+                    (question_version_id, question_type_code, content_locale, difficulty_scheme, difficulty_code, programming_languages, default_scoring_policy)
+                values (?, 'CODING', 'en', 'mockarena-v1', 'HARD', cast(? as jsonb), cast(? as jsonb))
+                """, versionId, "[\"PYTHON\"]", "{\"policyCode\":\"TEST_CASES\",\"parameters\":{\"points\":100}}");
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", questionId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+
+        String request = """
+                {"taxonomyAll":[{"scheme":"topic","code":"arrays"}],
+                 "questionTypeCodes":["CODING"],
+                 "difficultyProfiles":[{"scheme":"mockarena-v1","code":"HARD"}],
+                 "contentLocales":["en"],"programmingLanguages":["PYTHON"],"limit":1}
+                """;
+        mvc.perform(post("/internal/v2/question-versions/resolve").contentType(MediaType.APPLICATION_JSON).content(request))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].questionVersionId").value(versionId.toString()));
+        mvc.perform(post("/internal/v3/question-versions/candidate-content").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"questionVersionIds\":[\"" + versionId + "\"]}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].programmingLanguages[0]").value("PYTHON"));
+        assertThatThrownBy(() -> jdbc.update("update question.question_version_historical_generic_metadata set difficulty_code = 'EASY' where question_version_id = ?", versionId))
+            .hasMessageContaining("historical question version generic metadata is immutable");
     }
 
     @Test void v3DefaultsExistingStyleRowsToCoding() throws Exception {

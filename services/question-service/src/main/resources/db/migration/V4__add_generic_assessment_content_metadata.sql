@@ -21,7 +21,8 @@ UPDATE question.question_versions
        default_scoring_policy = CASE
            WHEN question_type = 'CODING' THEN jsonb_build_object('policyCode', 'TEST_CASES', 'parameters', scoring_rules)
            ELSE jsonb_build_object('policyCode', 'FIXED_RESPONSE', 'parameters', jsonb_build_object('correctPoints', 1, 'incorrectPoints', 0, 'unansweredPoints', 0))
-       END;
+       END
+ WHERE status = 'DRAFT';
 
 CREATE TABLE question.question_version_taxonomy (
     question_version_id UUID NOT NULL REFERENCES question.question_versions(id),
