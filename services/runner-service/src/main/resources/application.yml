@@ -1,0 +1,19 @@
+server:
+  port: 8085
+runner:
+  security:
+    enabled: ${RUNNER_SECURITY_ENABLED:true}
+    workload-token: ${RUNNER_SERVICE_WORKLOAD_TOKEN:}
+  docker:
+    image: ${RUNNER_JAVA_IMAGE:mockarena-java-runner:21-v1}
+    executable: ${RUNNER_DOCKER_EXECUTABLE:docker}
+    enabled: ${RUNNER_DOCKER_ENABLED:true}
+    max-memory-mb: ${RUNNER_MAX_MEMORY_MB:512}
+    max-output-bytes: ${RUNNER_MAX_OUTPUT_BYTES:1048576}
+    max-processes: ${RUNNER_MAX_PROCESSES:64}
+    max-cpus: ${RUNNER_MAX_CPUS:1.0}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

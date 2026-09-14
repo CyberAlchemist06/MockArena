@@ -1,0 +1,7 @@
+package com.mockarena.evaluation.infrastructure;
+import org.springframework.beans.factory.annotation.Value; import org.springframework.stereotype.Component; import org.springframework.web.client.*; import java.util.*;
+@Component public class RunnerExecutionClient { private final RestClient client; private final String token;
+ public RunnerExecutionClient(@Value("${runner-service.base-url}")String base,@Value("${evaluation.workload-auth.runner-token:}")String token){client=RestClient.builder().baseUrl(base).build();this.token=token;}
+ public Result execute(Request request){try{Result r=client.post().uri("/internal/v1/executions").header("X-MockArena-Workload-Token",token).body(request).retrieve().body(Result.class);if(r==null||!request.jobId().equals(r.jobId()))throw new RemoteDependencyException("RUNNER_RESPONSE_INVALID",null);return r;}catch(RestClientException e){throw new RemoteDependencyException("RUNNER_UNAVAILABLE",e);}}
+ public record Request(UUID jobId,String language,String runtimeProfileId,String source,Limits limits,List<TestCase> tests){} public record Limits(long compileTimeoutMs,long executionTimeoutMs,int memoryMb,int maxOutputBytes,int maxProcesses){} public record TestCase(String input,String expectedOutput,String comparisonMode){} public record Result(UUID jobId,String status,String candidateFailureCategory,int testsPassed,int testsTotal,Long executionTimeMs,Long peakMemoryBytes){}
+}

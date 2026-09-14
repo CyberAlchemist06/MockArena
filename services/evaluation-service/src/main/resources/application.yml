@@ -21,6 +21,7 @@ evaluation:
     incoming-token: ${EVALUATION_SERVICE_WORKLOAD_TOKEN:}
     assessment-snapshot-token: ${ASSESSMENT_SNAPSHOT_WORKLOAD_TOKEN:}
     question-coding-token: ${QUESTION_CODING_EVALUATION_WORKLOAD_TOKEN:}
+    runner-token: ${RUNNER_SERVICE_WORKLOAD_TOKEN:}
   preparation:
     enabled: ${EVALUATION_JOB_PREPARATION_ENABLED:true}
     fixed-delay-ms: ${EVALUATION_JOB_PREPARATION_DELAY_MS:5000}
@@ -28,6 +29,8 @@ assessment-service:
   base-url: ${ASSESSMENT_SERVICE_BASE_URL:http://localhost:8083}
 question-service:
   base-url: ${QUESTION_SERVICE_BASE_URL:http://localhost:8080}
+runner-service:
+  base-url: ${RUNNER_SERVICE_BASE_URL:http://localhost:8085}
 management:
   endpoints:
     web:
