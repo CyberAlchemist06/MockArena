@@ -1,4 +1,6 @@
 /backups/
+/.secrets/
+/.local/
 /**/target/
 .idea/
 .vscode/

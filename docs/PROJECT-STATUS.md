@@ -1,22 +1,23 @@
 # MockArena Project Status
 
-Checkpoint date: 2026-09-12
+Checkpoint date: 2026-09-14
 
 ## Implemented services
 
 - Question Service (`8080`): generic versioned assessment content.
 - Challenge Service (`8081`): generic question selection and immutable challenge manifests.
 - Identity Service (`8082`): local user identity and access-token issuance.
-- Assessment Service (`8083`): assessments, assessment versions, attempt start, and safe candidate-content delivery.
+- Assessment Service (`8083`): assessments, publication, candidate attempts/content/autosave, and anonymous public catalogue reads.
+- Next.js frontend: same-origin BFF, public catalogue, and authenticated candidate flows.
 
 PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container. Each service owns its own PostgreSQL schema; services communicate over versioned REST APIs and never read another service's tables.
 
 ## Database migrations
 
-- Question Service: V4 `add_generic_assessment_content_metadata`
+- Question Service: V5 `snapshot_generic_metadata_for_historical_question_versions`
 - Challenge Service: V5 `add_question_type_to_challenge_version_manifest`
 - Identity Service: V1 `identity_schema`
-- Assessment Service: V3 `add_attempt_start_slice`
+- Assessment Service: V6 `add_public_assessment_catalogue`
 
 All schema evolution uses Flyway. Published QuestionVersions, ChallengeVersions, and AssessmentVersions/manifests are protected as immutable historical records.
 
@@ -48,6 +49,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 - Published AssessmentVersions reference only immutable published ChallengeVersions through local ordered ID manifests; no Challenge or Question content is copied into Assessment data.
 - Timing supports optional UTC availability windows and optional attempt durations. The future attempt deadline rule is `min(startedAt + duration, availableUntil)` when both exist.
 - Policy envelopes support V1 `UNTIMED`/`FIXED_DURATION`, `MAX_ATTEMPTS`, and `IMMEDIATE`/`MANUAL`/`SCHEDULED` result release policies.
+- Anonymous public catalogue APIs expose only current `PUBLIC` + `PUBLISHED` AssessmentVersion summaries through an Assessment-owned PostgreSQL projection. The projection is built during new publication and has an explicit, disabled-by-default backfill runner for eligible historical rows.
 
 ### Attempt Slice 1
 
@@ -61,6 +63,23 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 - An Attempt owner can retrieve content only while their Attempt is `IN_PROGRESS` and before its deadline.
 - Assessment Service rebuilds the ordered route from Challenge Service's internal manifest API and requests safe exact-version content from Question Service.
 - Assessment Service persists no Question content. Browser responses never include correct MCQ answers/explanations, hidden tests, scoring internals, or execution limits.
+
+### Candidate response autosave
+
+- Candidates can save and resume MCQ selections or coding language/source code against the immutable AttemptItem route.
+- Saves require idempotency and client-mutation identifiers plus an expected response version; retries replay safely and stale writes return a conflict.
+- PostgreSQL is authoritative. Redis is intentionally not used, and the autosave path does not call Question or Challenge Service.
+
+### Public Assessment Catalogue
+
+- Anonymous list and detail APIs return only current `PUBLIC` + `PUBLISHED` AssessmentVersion summaries from an Assessment-owned PostgreSQL projection.
+- The projection is created during publication, excludes manifests and protected Question data, and can be backfilled only by an explicit disabled-by-default maintenance configuration.
+- The Next.js BFF calls these public endpoints without forwarding a candidate JWT. Public catalogue pages support safe search, assessment-type and availability filtering, plus keyset cursor pagination.
+
+### Next.js candidate flow
+
+- Login, registration, logout, `/users/me`, candidate navigation, dashboard, attempt start, candidate content, and response autosave use same-origin BFF routes.
+- JWT access tokens remain in HttpOnly cookies and are never exposed to client JavaScript. Public and authenticated candidate navigation remain separate; `/admin` remains isolated for ADMIN users.
 
 ## Local backup workflow
 
@@ -77,14 +96,21 @@ Use `D:\MockArena\scripts\Backup-MockArenaPostgres.ps1` to create a custom-forma
 - `git diff --check`: passed.
 - Logical backup: `mockarena_20260912_233414.dump`, SHA-256 verified and `pg_restore --list` verified by the backup script.
 
+Latest Assessment Service verification on 2026-09-13: `18` tests passed, `0` failures, `0` errors after V4/V5 response-autosave migrations.
+
+## Local mixed-assessment bootstrap
+
+`scripts/Bootstrap-MockArenaMixedAssessment.ps1` is a guarded local-development bootstrap for a 6-MCQ/4-CODING public assessment. It requires `MOCKARENA_DEVELOPMENT_BOOTSTRAP=true`, authenticates with explicitly supplied local Identity credentials, retains its JWT only in process memory, and stores rerun state under ignored `.local/`.
+
+The bootstrap has not been claimed as successfully executed in this repository state; local services and supplied development credentials are required to run it.
+
 ## Intentionally deferred
 
-- Candidate response autosave and durable response models.
 - Attempt submission, evaluation/code execution, scoring, percentile, leaderboard, and result release execution.
-- Next.js UI and Monaco editor.
+- Monaco editor.
 - Identity refresh tokens, logout, MFA, social login, and organization support.
-- Redis, Kafka, payments, billing, production entitlement service, AI skill diagnosis, and frontend work.
+- Redis, Kafka, payments, billing, production entitlement service, and AI skill diagnosis.
 
 ## Next development milestone
 
-Implement candidate response autosave, followed by the first Next.js candidate UI, Monaco coding editor, submit flow, and Evaluation Service.
+Implement assessment submission/evaluation and result release, followed by the Monaco coding editor, scoring, and percentile/leaderboard capabilities.
