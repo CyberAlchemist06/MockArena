@@ -14,10 +14,10 @@ PostgreSQL 16 runs locally in the existing `mockarena-postgres` Docker container
 
 ## Database migrations
 
-- Question Service: V5 `snapshot_generic_metadata_for_historical_question_versions`
+- Question Service: V6 `add_versioned_coding_execution_spec`
 - Challenge Service: V6 `add_challenge_version_selection_groups`
 - Identity Service: V1 `identity_schema`
-- Assessment Service: V8 `add_attempt_results`
+- Assessment Service: V9 `add_submitted_coding_snapshots_and_evaluation_outbox`
 
 All schema evolution uses Flyway. Published QuestionVersions, ChallengeVersions, and AssessmentVersions/manifests are protected as immutable historical records.
 
@@ -34,6 +34,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 - Safe catalog APIs: legacy V1 compatibility and generic V2 resolution.
 - Candidate-content V3 API returns exact requested historical `PUBLISHED` or `RETIRED` QuestionVersions while omitting MCQ correct answers/explanations and coding hidden tests, scoring rules, and execution limits.
 - Development seed data includes DSA coding and MCQ content.
+- New executable coding versions opt into a strict Java standard-I/O V1 execution specification. Legacy coding versions remain candidate-deliverable but non-executable. Protected hidden execution data is available only through a workload-token-protected internal endpoint; no evaluator or runner exists yet.
 
 ## Challenge Service
 
@@ -75,6 +76,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 
 - An authenticated Attempt owner can idempotently submit an `IN_PROGRESS` Attempt; submission stores `submittedAt`, transitions it to `SUBMITTED`, and locks further response mutation.
 - Submission locks the local Attempt, applies deadline expiry before accepting a submit, and does not call Question or Challenge Service. A local synchronous-after-commit listener then makes a best-effort MCQ evaluation attempt; listener failure leaves the submission successful and retryable.
+- The same submit transaction snapshots every coding response (including explicit unanswered state) and creates one opaque durable coding-evaluation outbox record per coding item. No relay, Evaluation Service, runner, or code execution is implemented yet.
 
 ### MCQ evaluation and durable results
 
@@ -123,11 +125,10 @@ The bootstrap has not been claimed as successfully executed in this repository s
 
 The canonical future-work list is [BACKLOG.md](../BACKLOG.md). This status document remains the source of truth for implemented capabilities.
 
-- Durable evaluation job/outbox execution, coding evaluation/code execution, percentile, leaderboard, and advanced result release/review controls.
-- Monaco editor.
+- Durable outbox relay/Evaluation Service, coding sandbox execution and callbacks, percentile, leaderboard, and advanced result release/review controls.
 - Identity refresh tokens, logout, MFA, social login, and organization support.
 - Redis, Kafka, payments, billing, production entitlement service, and AI skill diagnosis.
 
 ## Next development milestone
 
-Implement the minimal candidate Result BFF/UI, then durable evaluation jobs, coding sandbox evaluation, and advanced results review.
+Implement durable Evaluation Service job delivery, isolated coding sandbox execution, and coding result callbacks.

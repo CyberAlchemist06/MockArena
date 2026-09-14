@@ -1,0 +1,3 @@
+package com.mockarena.assessment.domain;
+import java.io.Serializable; import java.util.UUID;
+public class SubmittedCodingResponseSnapshotId implements Serializable { private UUID attemptId; private int globalPosition; public SubmittedCodingResponseSnapshotId(){} public SubmittedCodingResponseSnapshotId(UUID id,int position){attemptId=id;globalPosition=position;} @Override public boolean equals(Object other){return other instanceof SubmittedCodingResponseSnapshotId id&&java.util.Objects.equals(attemptId,id.attemptId)&&globalPosition==id.globalPosition;} @Override public int hashCode(){return java.util.Objects.hash(attemptId,globalPosition);} }

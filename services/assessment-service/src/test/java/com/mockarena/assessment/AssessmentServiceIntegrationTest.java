@@ -221,6 +221,39 @@ class AssessmentServiceIntegrationTest {
         assertThat(jdbc.queryForObject("select status from assessment.attempts where id=?", String.class, UUID.fromString(attempt))).isEqualTo("EXPIRED");
     }
 
+    @Test void submissionAtomicallySnapshotsCodingSourceAndQueuesOneOpaqueOutboxRecord() throws Exception {
+        String attempt = startMixedAttempt();
+        String source = "public class Main { public static void main(String[] args) {} }";
+        String saved = mvc.perform(put("/api/v1/attempts/{id}/responses/2", attempt).header("Idempotency-Key", "coding-source")
+                .contentType("application/json").content(response("CODING", null, "JAVA", source, 0, UUID.randomUUID())))
+            .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        long responseVersion = json.readTree(saved).get("version").asLong();
+        mvc.perform(post("/api/v1/attempts/{id}/submit", attempt).header("Idempotency-Key", "submit-coding"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUBMITTED"));
+        entityManager.flush();
+
+        Map<String,Object> snapshot = jdbc.queryForMap("select response_state, programming_language, source_code, response_version, source_fingerprint from assessment.submitted_coding_response_snapshots where attempt_id=? and global_position=2", UUID.fromString(attempt));
+        assertThat(snapshot.get("response_state")).isEqualTo("ANSWERED"); assertThat(snapshot.get("programming_language")).isEqualTo("JAVA"); assertThat(snapshot.get("source_code")).isEqualTo(source); assertThat(((Number)snapshot.get("response_version")).longValue()).isEqualTo(responseVersion);
+        assertThat(snapshot.get("source_fingerprint")).isEqualTo(java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(source.getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+        assertThat(jdbc.queryForObject("select count(*) from assessment.coding_evaluation_outbox where attempt_id=? and global_position=2 and event_type='CODING_EVALUATION_REQUESTED'", Integer.class, UUID.fromString(attempt))).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select source_fingerprint from assessment.coding_evaluation_outbox where attempt_id=? and global_position=2", String.class, UUID.fromString(attempt))).isEqualTo(snapshot.get("source_fingerprint"));
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.columns where table_schema='assessment' and table_name='coding_evaluation_outbox' and column_name='source_code'", Integer.class)).isZero();
+        mvc.perform(post("/api/v1/attempts/{id}/submit", attempt).header("Idempotency-Key", "submit-coding"))
+            .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from assessment.submitted_coding_response_snapshots where attempt_id=?", Integer.class, UUID.fromString(attempt))).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from assessment.coding_evaluation_outbox where attempt_id=?", Integer.class, UUID.fromString(attempt))).isEqualTo(1);
+    }
+
+    @Test void unansweredCodingGetsAnExplicitSnapshotAndOutboxRecord() throws Exception {
+        String attempt = startMixedAttempt();
+        mvc.perform(post("/api/v1/attempts/{id}/submit", attempt).header("Idempotency-Key", "submit-unanswered"))
+            .andExpect(status().isOk());
+        entityManager.flush();
+        Map<String,Object> snapshot = jdbc.queryForMap("select response_state, programming_language, source_code, source_fingerprint from assessment.submitted_coding_response_snapshots where attempt_id=? and global_position=2", UUID.fromString(attempt));
+        assertThat(snapshot.get("response_state")).isEqualTo("UNANSWERED"); assertThat(snapshot.get("programming_language")).isNull(); assertThat(snapshot.get("source_code")).isNull(); assertThat(snapshot.get("source_fingerprint")).isNull();
+        assertThat(jdbc.queryForObject("select count(*) from assessment.coding_evaluation_outbox where attempt_id=?", Integer.class, UUID.fromString(attempt))).isEqualTo(1);
+    }
+
     private String startMixedAttempt() throws Exception {
         ChallengeVersionReference reference = reference(); UUID firstQuestion = UUID.randomUUID(), firstVersion = UUID.randomUUID(), secondQuestion = UUID.randomUUID(), secondVersion = UUID.randomUUID();
         when(challenges.resolve(any())).thenReturn(List.of(reference), List.of(reference));

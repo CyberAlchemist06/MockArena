@@ -380,6 +380,41 @@ class QuestionServiceIntegrationTest {
         assertThat(jdbc.queryForObject("select question_type from question.question_versions where id = ?", String.class, versionId)).isEqualTo("CODING");
     }
 
+    @Test void validatedJavaExecutionSpecIsHistoricalProtectedAndLegacyCodingIsNotExecutable() throws Exception {
+        String created = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(executableCodingRequest(UUID.randomUUID())))
+            .andExpect(status().isCreated()).andExpect(jsonPath("$.hiddenTests").doesNotExist()).andReturn().getResponse().getContentAsString();
+        var tree = json.readTree(created); UUID versionId = UUID.fromString(tree.get("id").asText()); String questionId = tree.get("questionId").asText();
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", questionId).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+        String body = mvc.perform(post("/internal/v1/question-versions/coding-evaluation-data").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\"" + versionId + "\"]}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].questionVersionId").value(versionId.toString()))
+            .andExpect(jsonPath("$.entries[0].runtimeProfileId").value("java-21-stdio-v1"))
+            .andExpect(jsonPath("$.entries[0].allowedProgrammingLanguages[0]").value("JAVA"))
+            .andExpect(jsonPath("$.entries[0].testSpecification.hiddenTests[0].input").value("secret-input"))
+            .andReturn().getResponse().getContentAsString();
+        assertThat(body).contains("secret-input");
+        mvc.perform(post("/internal/v3/question-versions/candidate-content").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\"" + versionId + "\"]}"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.entries[0].hiddenTests").doesNotExist()).andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("secret-input"))));
+        String legacy = mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(validRequest(UUID.randomUUID())))
+            .andReturn().getResponse().getContentAsString();
+        UUID legacyVersion = UUID.fromString(json.readTree(legacy).get("id").asText()); String legacyQuestion = json.readTree(legacy).get("questionId").asText();
+        mvc.perform(post("/api/v1/questions/{id}/versions/1/publish", legacyQuestion).contentType(MediaType.APPLICATION_JSON).content("{\"expectedQuestionVersion\":0,\"expectedVersion\":0}"))
+            .andExpect(status().isOk());
+        mvc.perform(post("/internal/v1/question-versions/coding-evaluation-data").contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\"" + legacyVersion + "\"]}"))
+            .andExpect(status().isNotFound());
+        assertThatThrownBy(() -> jdbc.update("update question.question_versions set coding_execution_spec = '{}'::jsonb where id=?", versionId))
+            .hasMessageContaining("published question versions are immutable");
+    }
+
+    @Test void rejectsInvalidExecutableCodingSpecificationsBeforePublication() throws Exception {
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("java-21-stdio-v1", "python-3"));
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("\"memoryMb\":256", "\"memoryMb\":0"));
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("\"hiddenTests\":[{\"input\":\"secret-input\",\"output\":\"secret-output\"}]", "\"hiddenTests\":[]"));
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("NORMALIZED_WHITESPACE", "FLOAT_TOLERANCE"));
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("\"entrypoint\":\"Main\"", "\"entrypoint\":\"Main\",\"compileCommand\":\"candidate-controlled\""));
+        assertInvalidContent(executableCodingRequest(UUID.randomUUID()).replace("\"supportedLanguages\":[\"JAVA\"]", "\"supportedLanguages\":[\"PYTHON\"]"));
+    }
+
     private void assertValidationFailure(String body) throws Exception {
         mvc.perform(post("/api/v1/questions").contentType(MediaType.APPLICATION_JSON).content(body))
             .andExpect(status().isBadRequest())
@@ -394,6 +429,12 @@ class QuestionServiceIntegrationTest {
     private static String validRequest(UUID ownerUserId) {
         return """
           {"ownerUserId":"%s","content":{"title":"Two Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Find pair","constraintsText":"n >= 2","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"[2,7]","output":"[0,1]"}],"hiddenTests":[{"input":"secret-input","output":"secret-output"}],"scoringRules":{"points":100},"executionLimits":{"timeMs":1000}}}
+          """.formatted(ownerUserId);
+    }
+
+    private static String executableCodingRequest(UUID ownerUserId) {
+        return """
+          {"ownerUserId":"%s","content":{"title":"Executable Sum","tags":["arrays"],"difficulty":"EASY","questionType":"CODING","prompt":"Read and write standard input","constraintsText":"deterministic","examples":[],"supportedLanguages":["JAVA"],"visibleTests":[{"input":"1","output":"1"}],"codingExecutionSpec":{"specVersion":1,"runtimeProfileId":"java-21-stdio-v1","ioContract":"STDIN_STDOUT","sourceFilename":"Main.java","entrypoint":"Main","allowedProgrammingLanguages":["JAVA"],"comparison":{"mode":"NORMALIZED_WHITESPACE"},"executionLimits":{"compileTimeoutMs":3000,"executionTimeoutMs":1000,"memoryMb":256,"maxOutputBytes":65536},"scoringPolicy":{"policyCode":"ALL_OR_NOTHING","maxPoints":100},"hiddenTests":[{"input":"secret-input","output":"secret-output"}]}}}
           """.formatted(ownerUserId);
     }
 

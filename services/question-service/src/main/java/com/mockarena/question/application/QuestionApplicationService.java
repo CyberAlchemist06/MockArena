@@ -49,7 +49,7 @@ public class QuestionApplicationService {
     private static void assertVersion(long actual, long expected) { if(actual != expected) throw new OptimisticLockException("Stale resource version"); }
     private static QuestionVersion.Content content(ContentRequest c) {
         List<McqOption> options = c.options() == null ? null : c.options().stream().map(option -> new McqOption(option.id(), option.text())).toList();
-        return new QuestionVersion.Content(c.title(), c.tags(), c.difficulty(), c.questionType(), c.prompt(), c.constraintsText(), c.examples(), c.supportedLanguages(), c.visibleTests(), c.hiddenTests(), c.scoringRules(), c.executionLimits(), options, c.correctOptionId(), c.explanation());
+        return new QuestionVersion.Content(c.title(), c.tags(), c.difficulty(), c.questionType(), c.prompt(), c.constraintsText(), c.examples(), c.supportedLanguages(), c.visibleTests(), c.hiddenTests(), c.scoringRules(), c.executionLimits(), options, c.correctOptionId(), c.explanation(), c.codingExecutionSpec());
     }
     /** V1 tags are retained as a compatibility input and project into generic taxonomy. */
     private static List<TaxonomyAssignment> legacyTaxonomy(List<String> tags) {

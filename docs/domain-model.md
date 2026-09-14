@@ -48,7 +48,7 @@ Challenge Service may expose the published manifest internally as ordered routin
 
 - **Purpose:** Immutable, gradable definition of a DSA problem.
 - **Owner:** Question Service.
-- **Important fields:** `questionVersionId`, `questionId`, version number, title, normalized tags, difficulty, prompt, constraints, examples, supported-language policy, visible and hidden test definitions or protected test references, scoring rules, and execution limits.
+- **Important fields:** `questionVersionId`, `questionId`, version number, title, normalized tags, difficulty, prompt, constraints, examples, supported-language policy, visible and hidden test definitions or protected test references, scoring rules, and execution limits. New executable coding versions additionally carry a versioned, validated platform execution specification; legacy coding versions remain non-executable.
 - **Lifecycle/status:** `draft`, `published`, or `retired`. Only published versions may be included in a published ChallengeVersion.
 - **Relationships:** Belongs to one Question; is selected by a ChallengeVersion; is indirectly included in AssessmentVersions, Submissions, and Evaluations through the selected ChallengeVersion.
 - **Immutable data:** After publication, title, tags, difficulty, prompt, tests, scoring, supported languages, and execution limits cannot change. A revision creates a new QuestionVersion. Question Service exposes only a safe catalog projection of published current QuestionVersions for Challenge Service selection; it omits all executable and test content.
@@ -87,6 +87,10 @@ Assessment Service derives an Assessment-owned safe public projection when an As
 ### Candidate response autosave
 
 Assessment Service persists an Attempt response against the immutable `(attemptId, globalPosition)` AttemptItem route. An MCQ response contains only the candidate-selected option ID. A coding response contains only the candidate-selected programming language and source code. The response has an optimistic-lock version and is written with an idempotency key/client mutation record. Only the Attempt owner may read or save it while the Attempt is `IN_PROGRESS`; a due Attempt transitions to `EXPIRED` before either operation completes. Responses contain no correctness or grading data and do not copy Question content, hidden tests, or protected answer material.
+
+### Submitted coding snapshots and outbox
+
+On successful submission, Assessment Service records one immutable coding snapshot for every Coding AttemptItem. `ANSWERED` snapshots retain the submitted language, source, response version, source fingerprint, and timestamp; `UNANSWERED` is explicit rather than inferred from a missing row. The same transaction adds an opaque coding-evaluation outbox record. These Assessment-owned records contain no hidden tests or Question execution/scoring specifications and do not execute candidate code.
 
 ## Submission
 

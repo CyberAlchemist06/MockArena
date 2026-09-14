@@ -22,6 +22,8 @@ Challenge Service can query the metadata-only internal catalog at `POST /interna
 
 Assessment Service can use `POST /internal/v1/question-versions/evaluation-data` only for MCQ evaluation of exact historical `PUBLISHED` or `RETIRED` QuestionVersion IDs. This is a narrow protected projection containing the version ID, MCQ type, correct option identifier, and immutable scoring-policy snapshot. It is not available through candidate or public routes; candidate-content remains free of correct answers, explanations, and protected coding material.
 
+New executable coding QuestionVersions may include a validated V1 `codingExecutionSpec`. V1 is deliberately Java-only (`java-21-stdio-v1`, `Main.java`, `Main`, standard input/output), with bounded hidden tests, limits, comparison rules, and `ALL_OR_NOTHING` scoring. Legacy coding versions without this opt-in specification remain candidate-deliverable but non-executable. `POST /internal/v1/question-versions/coding-evaluation-data` returns hidden execution material only to an Evaluation workload using `X-MockArena-Workload-Token`; configure `QUESTION_CODING_EVALUATION_WORKLOAD_TOKEN` outside source control. Security-enabled startup fails closed without it. This transitional application guard must be paired with deployment mTLS before coding execution is enabled.
+
 Published question versions are immutable in both application rules and a PostgreSQL trigger. Mutating version operations require the client’s JPA version value; PostgreSQL's unique `(question_id, version_number)` constraint provides an additional concurrency safeguard. No distributed locking is used.
 
 Health is at `/actuator/health`; Kubernetes-compatible probe paths are `/actuator/health/liveness` and `/actuator/health/readiness`.

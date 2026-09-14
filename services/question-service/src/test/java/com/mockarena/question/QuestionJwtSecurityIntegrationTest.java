@@ -56,6 +56,7 @@ class QuestionJwtSecurityIntegrationTest {
         registry.add("question.security.jwt.public-key-path", () -> PUBLIC_KEY_PATH.toString());
         registry.add("question.security.jwt.issuer", () -> ISSUER);
         registry.add("question.security.jwt.audience", () -> AUDIENCE);
+        registry.add("question.workload-auth.coding-evaluation.token", () -> "test-workload-token");
     }
 
     @Autowired MockMvc mvc;
@@ -96,6 +97,20 @@ class QuestionJwtSecurityIntegrationTest {
         assertUnauthenticated(token(userId, "other-issuer", AUDIENCE, Instant.now().plusSeconds(60), KEY_PAIR));
         assertUnauthenticated(token(userId, ISSUER, "other-audience", Instant.now().plusSeconds(60), KEY_PAIR));
         assertUnauthenticated(token(userId, ISSUER, AUDIENCE, Instant.now().plusSeconds(60), keyPair()));
+    }
+
+    @Test
+    void codingEvaluationEndpointRequiresWorkloadIdentityNotCandidateJwt() throws Exception {
+        mvc.perform(post("/internal/v1/question-versions/coding-evaluation-data").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"questionVersionIds\":[\"" + UUID.randomUUID() + "\"]}"))
+            .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        mvc.perform(post("/internal/v1/question-versions/coding-evaluation-data")
+                .header("Authorization", "Bearer " + token(UUID.randomUUID(), ISSUER, AUDIENCE, Instant.now().plusSeconds(60), KEY_PAIR))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\"" + UUID.randomUUID() + "\"]}"))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post("/internal/v1/question-versions/coding-evaluation-data").header("X-MockArena-Workload-Token", "test-workload-token")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"questionVersionIds\":[\"" + UUID.randomUUID() + "\"]}"))
+            .andExpect(status().isNotFound());
     }
 
     private void assertUnauthenticated(String jwt) throws Exception {

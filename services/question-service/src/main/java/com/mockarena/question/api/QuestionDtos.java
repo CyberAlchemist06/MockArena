@@ -17,7 +17,8 @@ public final class QuestionDtos {
     public record ContentRequest(@NotBlank @Size(max=200) String title, @NotNull @Size(max=20) List<@NotBlank @Size(max=50) String> tags,
                                  @NotNull Difficulty difficulty, @NotNull QuestionType questionType, @NotBlank String prompt, String constraintsText,
                                  JsonNode examples, JsonNode supportedLanguages, JsonNode visibleTests, JsonNode hiddenTests, JsonNode scoringRules, JsonNode executionLimits,
-                                 @Valid List<McqOptionRequest> options, String correctOptionId, String explanation) {
+                                 @Valid List<McqOptionRequest> options, String correctOptionId, String explanation, JsonNode codingExecutionSpec) {
+        public ContentRequest(String title, List<String> tags, Difficulty difficulty, QuestionType questionType, String prompt, String constraintsText, JsonNode examples, JsonNode supportedLanguages, JsonNode visibleTests, JsonNode hiddenTests, JsonNode scoringRules, JsonNode executionLimits, List<McqOptionRequest> options, String correctOptionId, String explanation) { this(title,tags,difficulty,questionType,prompt,constraintsText,examples,supportedLanguages,visibleTests,hiddenTests,scoringRules,executionLimits,options,correctOptionId,explanation,null); }
         @Override public String toString() { return "ContentRequest[title=" + title + ", questionType=" + questionType + "]"; }
     }
     public record CreateQuestionRequest(@NotNull @Valid ContentRequest content) { }

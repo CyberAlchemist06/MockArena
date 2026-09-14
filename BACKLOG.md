@@ -51,7 +51,7 @@ This is not a committed roadmap or release promise. Items are intentionally defe
 
 - [ ] Evaluation Service
   - MCQ historical evaluation/result persistence now has an Assessment-owned V1 foundation.
-  - Future work includes a durable evaluation job/outbox and separate coding evaluation boundary.
+  - Coding submission snapshots and an Assessment-owned durable outbox now exist; delivery relay, Evaluation Service jobs, and coding result callbacks remain future work.
 
 - [ ] Secure sandboxed code execution
   - Treat candidate code as hostile.
@@ -59,6 +59,7 @@ This is not a committed roadmap or release promise. Items are intentionally defe
   - Deny network access and isolate the filesystem.
   - Execute as a non-root user, enforce output limits and rate limiting, and destroy the runner after execution.
   - Hidden tests must never reach candidate clients.
+  - V1 executable Question contract exists for Java standard I/O only; no runner executes code yet.
 
 - [ ] Coding evaluation and final mixed-assessment scoring
   - MCQ-only scoring and durable derived result facts exist; coding items intentionally remain pending.

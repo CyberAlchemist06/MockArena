@@ -1,0 +1,2 @@
+package com.mockarena.assessment.domain; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface CodingEvaluationOutboxRepository extends JpaRepository<CodingEvaluationOutbox,UUID>{ List<CodingEvaluationOutbox> findByAttemptIdOrderByGlobalPositionAsc(UUID attemptId); boolean existsByAttemptIdAndGlobalPositionAndEventType(UUID attemptId,int globalPosition,String eventType); }

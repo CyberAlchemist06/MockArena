@@ -13,6 +13,9 @@ spring:
     schemas: question
     default-schema: question
 question:
+  workload-auth:
+    coding-evaluation:
+      token: ${QUESTION_CODING_EVALUATION_WORKLOAD_TOKEN:}
   security:
     enabled: ${QUESTION_SECURITY_ENABLED:true}
     jwt:

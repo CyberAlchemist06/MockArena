@@ -1,0 +1,12 @@
+package com.mockarena.assessment.domain;
+import jakarta.persistence.*; import java.time.*; import java.util.*;
+@Entity @IdClass(SubmittedCodingResponseSnapshotId.class) @Table(name="submitted_coding_response_snapshots",schema="assessment") public class SubmittedCodingResponseSnapshot {
+ @Id @Column(nullable=false,updatable=false) private UUID attemptId; @Id @Column(nullable=false,updatable=false) private int globalPosition;
+ @Column(nullable=false,updatable=false) private UUID questionId,questionVersionId; @Column(nullable=false,updatable=false) private String responseState;
+ @Column(updatable=false) private String programmingLanguage; @Column(columnDefinition="text",updatable=false) private String sourceCode; @Column(updatable=false) private Long responseVersion; @Column(updatable=false,length=64) private String sourceFingerprint; @Column(nullable=false,updatable=false) private Instant submittedAt;
+ protected SubmittedCodingResponseSnapshot(){}
+ private SubmittedCodingResponseSnapshot(AttemptItem item,String state,String language,String source,Long version,String fingerprint,Instant at){attemptId=item.attemptId();globalPosition=item.globalPosition();questionId=item.questionId();questionVersionId=item.questionVersionId();responseState=state;programmingLanguage=language;sourceCode=source;responseVersion=version;sourceFingerprint=fingerprint;submittedAt=at;}
+ public static SubmittedCodingResponseSnapshot answered(AttemptItem item,AttemptItemResponse response,String fingerprint,Instant at){return new SubmittedCodingResponseSnapshot(item,"ANSWERED",response.responsePayload().path("programmingLanguage").asText(),response.responsePayload().path("sourceCode").asText(),response.version(),fingerprint,at);}
+ public static SubmittedCodingResponseSnapshot unanswered(AttemptItem item,Instant at){return new SubmittedCodingResponseSnapshot(item,"UNANSWERED",null,null,null,null,at);}
+ public UUID attemptId(){return attemptId;} public int globalPosition(){return globalPosition;} public UUID questionId(){return questionId;} public UUID questionVersionId(){return questionVersionId;} public String responseState(){return responseState;} public String programmingLanguage(){return programmingLanguage;} public String sourceCode(){return sourceCode;} public Long responseVersion(){return responseVersion;} public String sourceFingerprint(){return sourceFingerprint;} public Instant submittedAt(){return submittedAt;}
+}
