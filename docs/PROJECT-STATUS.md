@@ -107,6 +107,8 @@ The bootstrap has not been claimed as successfully executed in this repository s
 
 ## Intentionally deferred
 
+The canonical future-work list is [BACKLOG.md](../BACKLOG.md). This status document remains the source of truth for implemented capabilities.
+
 - Attempt submission, evaluation/code execution, scoring, percentile, leaderboard, and result release execution.
 - Monaco editor.
 - Identity refresh tokens, logout, MFA, social login, and organization support.
