@@ -1,4 +1,4 @@
-import type { ApiErrorBody, Attempt, AttemptSubmission, CandidateContent, SaveResponseInput, SavedResponse, User } from "./contracts";
+import type { ApiErrorBody, Attempt, AttemptResult, AttemptSubmission, CandidateContent, SaveResponseInput, SavedResponse, User } from "./contracts";
 
 export class BffError extends Error {
   constructor(public readonly status: number, public readonly code?: string) { super("MockArena request failed"); }
@@ -19,5 +19,6 @@ export const browserApi = {
   content: (attemptId: string) => request<CandidateContent>(`/api/attempts/${attemptId}/content`),
   responses: (attemptId: string) => request<SavedResponse[]>(`/api/attempts/${attemptId}/responses`),
   submit: (attemptId: string, key: string) => request<AttemptSubmission>(`/api/attempts/${attemptId}/submit`, { method:"POST", headers:{"Idempotency-Key":key} }),
+  result: (attemptId: string) => request<AttemptResult>(`/api/attempts/${attemptId}/result`),
   saveResponse: (attemptId: string, position: number, input: SaveResponseInput, key: string) => request<SavedResponse>(`/api/attempts/${attemptId}/responses/${position}`, { method: "PUT", headers: { "Idempotency-Key": key }, body: JSON.stringify(input) })
 };

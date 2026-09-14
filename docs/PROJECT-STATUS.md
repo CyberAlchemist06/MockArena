@@ -94,6 +94,7 @@ Question, Challenge, and Assessment services validate the Identity public key lo
 
 - Login, registration, logout, `/users/me`, candidate navigation, dashboard, attempt start, candidate content, and response autosave use same-origin BFF routes.
 - JWT access tokens remain in HttpOnly cookies and are never exposed to client JavaScript. Public and authenticated candidate navigation remain separate; `/admin` remains isolated for ADMIN users.
+- Submitted Attempt pages use the same-origin Result BFF to recover authoritative `PENDING`, `PARTIALLY_EVALUATED`, `EVALUATED`, or safely unreleased state after refresh. This is a minimal status view, not the future Results dashboard.
 
 ## Local backup workflow
 
