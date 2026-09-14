@@ -4,6 +4,7 @@ import type { ApiErrorBody, LoginResponse, User } from "./contracts";
 
 const identityBaseUrl = process.env.IDENTITY_SERVICE_BASE_URL ?? "http://localhost:8082";
 const assessmentBaseUrl = process.env.ASSESSMENT_SERVICE_BASE_URL ?? "http://localhost:8083";
+const challengeBaseUrl = process.env.CHALLENGE_SERVICE_BASE_URL ?? "http://localhost:8081";
 
 export class ServiceError extends Error {
   constructor(public readonly status: number, public readonly code?: string) { super("Service request failed"); }
@@ -47,6 +48,10 @@ export async function currentUser(): Promise<User | null> {
 
 export async function assessmentFetch(path: string, init: RequestInit = {}): Promise<Response> {
   return serviceFetch(assessmentBaseUrl, path, init, true);
+}
+
+export async function challengeFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  return serviceFetch(challengeBaseUrl, path, init, true);
 }
 
 export async function publicAssessmentFetch(path: string): Promise<Response> {

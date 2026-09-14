@@ -12,6 +12,7 @@ const links = [
   ["Question Bank", "/questions"],
   ["Companies", "/companies"],
   ["Pricing", "/pricing"],
+  ["Create Assessment", "/create/assessment"],
   ["Dashboard", "/candidate"]
 ] as const;
 

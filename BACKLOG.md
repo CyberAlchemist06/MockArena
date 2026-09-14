@@ -135,6 +135,9 @@ Future product policy only; none of the following is implemented behavior.
 - [ ] Search/filter improvements for the public Assessment catalogue
   - Add filters only when backed by authoritative owned metadata.
 
+- [ ] Taxonomy/filter discovery API for assessment authoring
+  - Builder filters are currently generic free-form inputs because no authoritative browse API exists.
+
 - [ ] SEO, metadata, and public-sharing improvements
 
 ## Security and Anti-Cheating
@@ -198,6 +201,8 @@ Future product policy only; none of the following is implemented behavior.
 - [ ] Review internal endpoint exposure before production deployment
 - [ ] Revisit catalogue/query indexes with production-scale data
 - [ ] Performance/load tests for large Question catalogues and custom composition
+- [ ] Recover or reconcile an orphaned published Challenge after creator orchestration failure
+  - Current browser-to-BFF workflow spans Challenge and Assessment services without a distributed transaction or cross-service idempotency key.
 - [ ] Decide retention/archive strategy for old Assessment, Challenge, and Question versions
 
 ## Future Question Types / Extensibility
